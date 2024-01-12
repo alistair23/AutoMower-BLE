@@ -7,7 +7,7 @@
 import unittest
 import binascii
 
-from helpers import crc
+from .helpers import crc
 
 Requests = dict([
     ("pin", ((4664, 4), (0x00, 0x02, 0x00))),

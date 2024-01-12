@@ -7,8 +7,8 @@
 import unittest
 import binascii
 
-from models import MowerModels
-from helpers import crc
+from .models import MowerModels
+from .helpers import crc
 
 
 class MowerResponse:
