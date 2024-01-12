@@ -60,6 +60,27 @@ class Mower:
             logger.info("[Service] %s", service)
 
             for char in service.characteristics:
+                if "read" in char.properties:
+                    try:
+                        value = await self.client.read_gatt_char(char.uuid)
+                        logger.debug(
+                            "  [Characteristic] %s (%s), Value: %r",
+                            char,
+                            ",".join(char.properties),
+                            value,
+                        )
+                    except Exception as e:
+                        logger.error(
+                            "  [Characteristic] %s (%s), Error: %s",
+                            char,
+                            ",".join(char.properties),
+                            e,
+                        )
+
+                else:
+                    logger.debug(
+                        "  [Characteristic] %s (%s)", char, ",".join(char.properties)
+                    )
                 if char.uuid == "98bd0002-0b0e-421a-84e5-ddbf75dc6de4":
                     self.write_char = char
 
