@@ -31,15 +31,12 @@ class Mower:
 
         self.queue = asyncio.Queue()
 
-    async def connect(self):
+    async def connect(self, device):
         """
             Connect to a device and setup the channel
         """
         logger.info("starting scan...")
 
-        device = await BleakScanner.find_device_by_address(
-            self.address
-        )
         if device is None:
             logger.error(
                 "could not find device with address '%s'", self.address)
@@ -266,7 +263,11 @@ class Mower:
 
 
 async def main(mower):
-    await mower.connect()
+    device = await BleakScanner.find_device_by_address(
+            mower.address
+        )
+
+    await mower.connect(device)
 
     model = await mower.get_model()
     print("Connected to: " + model)
