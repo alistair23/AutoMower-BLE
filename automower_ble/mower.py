@@ -43,16 +43,17 @@ class Mower:
             return
 
         logger.info("connecting to device...")
-
         self.client = BleakClient(
             device,
             services=["98bd0001-0b0e-421a-84e5-ddbf75dc6de4"],
             use_cached=False
         )
-
         await self.client.connect()
-
         logger.info("connected")
+
+        logger.info("pairing device...")
+        await self.client.pair()
+        logger.info("paired")
 
         self.client._backend._mtu_size = 20
 
