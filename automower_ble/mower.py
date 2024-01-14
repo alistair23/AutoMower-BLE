@@ -98,6 +98,7 @@ class Mower:
         logger.info("Writing: " + str(binascii.hexlify(data)))
 
         chunk_size = self.client.mtu_size - 3
+        logger.debug("chunk_size: " + str(chunk_size))
         for chunk in (
             data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
         ):
