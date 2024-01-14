@@ -95,18 +95,29 @@ class Mower:
 
         await self.client.start_notify(self.read_char, notification_handler)
 
-        data = self.request.generate_request_setup_channel_id()
-        logger.info("Writing: " + str(binascii.hexlify(data)))
+        await asyncio.sleep(1.0)
 
-        chunk_size = MTU_SIZE - 3
-        logger.debug("chunk_size: " + str(chunk_size))
-        for chunk in (
-            data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
-        ):
-            logger.info(chunk)
-            await self.client.write_gatt_char(self.write_char, chunk, response=False)
+        i = 5
+        while i > 0:
+            try:
+                data = self.request.generate_request_setup_channel_id()
+                logger.info("Writing: " + str(binascii.hexlify(data)))
 
-        data = await self.queue.get()
+                chunk_size = MTU_SIZE - 3
+                logger.debug("chunk_size: " + str(chunk_size))
+                for chunk in (
+                    data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
+                ):
+                    logger.info(chunk)
+                    await self.client.write_gatt_char(self.write_char, chunk, response=False)
+                    await asyncio.sleep(1.0)
+
+                data = await self.queue.get()
+            except CancelledError:
+                i = i - 1
+                continue
+
+            break
 
         data = self.request.generate_request_handshake()
         logger.info("Writing: " + str(binascii.hexlify(data)))
