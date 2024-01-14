@@ -20,6 +20,7 @@ from bleak.backends.characteristic import BleakGATTCharacteristic
 
 logger = logging.getLogger(__name__)
 
+MTU_SIZE = 20
 
 class Mower:
     def __init__(self, channel_id: int, address):
@@ -55,7 +56,7 @@ class Mower:
         await self.client.pair()
         logger.info("paired")
 
-        self.client._backend._mtu_size = 20
+        self.client._backend._mtu_size = MTU_SIZE
 
         for service in self.client.services:
             logger.info("[Service] %s", service)
@@ -97,7 +98,7 @@ class Mower:
         data = self.request.generate_request_setup_channel_id()
         logger.info("Writing: " + str(binascii.hexlify(data)))
 
-        chunk_size = self.client.mtu_size - 3
+        chunk_size = MTU_SIZE - 3
         logger.debug("chunk_size: " + str(chunk_size))
         for chunk in (
             data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
@@ -110,7 +111,7 @@ class Mower:
         data = self.request.generate_request_handshake()
         logger.info("Writing: " + str(binascii.hexlify(data)))
 
-        chunk_size = self.client.mtu_size - 3
+        chunk_size = MTU_SIZE - 3
         for chunk in (
             data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
         ):
@@ -126,7 +127,7 @@ class Mower:
         data = self.request.generate_request_device_type()
         logger.info("Writing: " + str(binascii.hexlify(data)))
 
-        chunk_size = self.client.mtu_size - 3
+        chunk_size = MTU_SIZE - 3
         for chunk in (
             data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
         ):
@@ -143,7 +144,7 @@ class Mower:
         data = self.request.generate_request_is_charging()
         logger.info("Writing: " + str(binascii.hexlify(data)))
 
-        chunk_size = self.client.mtu_size - 3
+        chunk_size = MTU_SIZE - 3
         for chunk in (
             data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
         ):
@@ -161,7 +162,7 @@ class Mower:
         data = self.request.generate_request_battery_level()
         logger.info("Writing: " + str(binascii.hexlify(data)))
 
-        chunk_size = self.client.mtu_size - 3
+        chunk_size = MTU_SIZE - 3
         for chunk in (
             data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
         ):
@@ -178,7 +179,7 @@ class Mower:
         data = self.request.generate_request_mower_state()
         logger.info("Writing: " + str(binascii.hexlify(data)))
 
-        chunk_size = self.client.mtu_size - 3
+        chunk_size = MTU_SIZE - 3
         for chunk in (
             data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
         ):
@@ -195,7 +196,7 @@ class Mower:
         data = self.request.generate_request_mower_activity()
         logger.info("Writing: " + str(binascii.hexlify(data)))
 
-        chunk_size = self.client.mtu_size - 3
+        chunk_size = MTU_SIZE - 3
         for chunk in (
             data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
         ):
@@ -216,7 +217,7 @@ class Mower:
         data = self.request.generate_request_mode_of_operation("manual")
         logger.info("Writing: " + str(binascii.hexlify(data)))
 
-        chunk_size = self.client.mtu_size - 3
+        chunk_size = MTU_SIZE - 3
         for chunk in (
             data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
         ):
@@ -230,7 +231,7 @@ class Mower:
         data = self.request.generate_request_override_duration("3hours")
         logger.info("Writing: " + str(binascii.hexlify(data)))
 
-        chunk_size = self.client.mtu_size - 3
+        chunk_size = MTU_SIZE - 3
         for chunk in (
             data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
         ):
@@ -245,7 +246,7 @@ class Mower:
         data = self.request.generate_request_pause()
         logger.info("Writing: " + str(binascii.hexlify(data)))
 
-        chunk_size = self.client.mtu_size - 3
+        chunk_size = MTU_SIZE - 3
         for chunk in (
             data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
         ):
@@ -260,7 +261,7 @@ class Mower:
         data = self.request.generate_request_resume()
         logger.info("Writing: " + str(binascii.hexlify(data)))
 
-        chunk_size = self.client.mtu_size - 3
+        chunk_size = MTU_SIZE - 3
         for chunk in (
             data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
         ):
