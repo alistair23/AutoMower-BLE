@@ -46,7 +46,7 @@ class Mower:
         self.client = BleakClient(
             device,
             services=["98bd0001-0b0e-421a-84e5-ddbf75dc6de4"],
-            use_cached=False
+            use_cached=True
         )
         await self.client.connect()
         logger.info("connected")
