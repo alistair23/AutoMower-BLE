@@ -104,7 +104,7 @@ class Mower:
             data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
         ):
             logger.info(chunk)
-            await self.client.write_gatt_char(self.write_char, chunk, response=True)
+            await self.client.write_gatt_char(self.write_char, chunk, response=False)
 
         data = await self.queue.get()
 
@@ -116,7 +116,7 @@ class Mower:
             data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
         ):
             logger.info(chunk)
-            await self.client.write_gatt_char(self.write_char, chunk, response=True)
+            await self.client.write_gatt_char(self.write_char, chunk, response=False)
 
         data = await self.queue.get()
 
@@ -132,7 +132,7 @@ class Mower:
             data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
         ):
             logger.info(chunk)
-            await self.client.write_gatt_char(self.write_char, chunk, response=True)
+            await self.client.write_gatt_char(self.write_char, chunk, response=False)
 
         data = await self.queue.get()
         if data[len(data) - 1] != 0x03:
@@ -149,7 +149,7 @@ class Mower:
             data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
         ):
             logger.info(chunk)
-            await self.client.write_gatt_char(self.write_char, chunk, response=True)
+            await self.client.write_gatt_char(self.write_char, chunk, response=False)
 
         data = await self.queue.get()
         if data[len(data) - 1] != 0x03:
@@ -167,7 +167,7 @@ class Mower:
             data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
         ):
             logger.info(chunk)
-            await self.client.write_gatt_char(self.write_char, chunk, response=True)
+            await self.client.write_gatt_char(self.write_char, chunk, response=False)
 
         data = await self.queue.get()
         if data[len(data) - 1] != 0x03:
@@ -184,7 +184,7 @@ class Mower:
             data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
         ):
             logger.info(chunk)
-            await self.client.write_gatt_char(self.write_char, chunk, response=True)
+            await self.client.write_gatt_char(self.write_char, chunk, response=False)
 
         data = await self.queue.get()
         if data[len(data) - 1] != 0x03:
@@ -201,7 +201,7 @@ class Mower:
             data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
         ):
             logger.info(chunk)
-            await self.client.write_gatt_char(self.write_char, chunk, response=True)
+            await self.client.write_gatt_char(self.write_char, chunk, response=False)
 
         data = await self.queue.get()
         if data[len(data) - 1] != 0x03:
@@ -222,7 +222,7 @@ class Mower:
             data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
         ):
             logger.info(chunk)
-            await self.client.write_gatt_char(self.write_char, chunk, response=True)
+            await self.client.write_gatt_char(self.write_char, chunk, response=False)
 
         data = await self.queue.get()
         if data[len(data) - 1] != 0x03:
@@ -236,7 +236,7 @@ class Mower:
             data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
         ):
             logger.info(chunk)
-            await self.client.write_gatt_char(self.write_char, chunk, response=True)
+            await self.client.write_gatt_char(self.write_char, chunk, response=False)
 
         data = await self.queue.get()
         if data[len(data) - 1] != 0x03:
@@ -251,7 +251,7 @@ class Mower:
             data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
         ):
             logger.info(chunk)
-            await self.client.write_gatt_char(self.write_char, chunk, response=True)
+            await self.client.write_gatt_char(self.write_char, chunk, response=False)
 
         data = await self.queue.get()
         if data[len(data) - 1] != 0x03:
@@ -266,7 +266,7 @@ class Mower:
             data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
         ):
             logger.info(chunk)
-            await self.client.write_gatt_char(self.write_char, chunk, response=True)
+            await self.client.write_gatt_char(self.write_char, chunk, response=False)
 
         data = await self.queue.get()
         if data[len(data) - 1] != 0x03:
