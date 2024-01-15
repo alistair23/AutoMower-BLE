@@ -32,7 +32,7 @@ class Mower:
 
         self.queue = asyncio.Queue()
 
-    async def connect(self, device):
+    async def connect(self, device) -> bool:
         """
             Connect to a device and setup the channel
         """
@@ -41,7 +41,7 @@ class Mower:
         if device is None:
             logger.error(
                 "could not find device with address '%s'", self.address)
-            return
+            return False
 
         logger.info("connecting to device...")
         self.client = BleakClient(
@@ -95,8 +95,6 @@ class Mower:
 
         await self.client.start_notify(self.read_char, notification_handler)
 
-        await asyncio.sleep(1.0)
-
         i = 5
         while i > 0:
             try:
@@ -110,14 +108,20 @@ class Mower:
                 ):
                     logger.info(chunk)
                     await self.client.write_gatt_char(self.write_char, chunk, response=False)
-                    await asyncio.sleep(1.0)
 
                 data = await self.queue.get()
-            except CancelledError:
+            except asyncio.exceptions.CancelledError:
                 i = i - 1
+                await asyncio.sleep(15.0 * (5 - i))
                 continue
 
             break
+
+        if i == 0:
+            logger.error(
+                "Unable to communicate with device: '%s'", self.address)
+            await self.disconnect()
+            return False
 
         data = self.request.generate_request_handshake()
         logger.info("Writing: " + str(binascii.hexlify(data)))
@@ -130,6 +134,8 @@ class Mower:
             await self.client.write_gatt_char(self.write_char, chunk, response=False)
 
         data = await self.queue.get()
+
+        return True
 
     async def get_model(self):
         """
