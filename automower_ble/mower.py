@@ -35,6 +35,8 @@ class Mower:
     async def connect(self, device) -> bool:
         """
             Connect to a device and setup the channel
+
+            Returns True on success
         """
         logger.info("starting scan...")
 
@@ -245,6 +247,8 @@ class Mower:
         if data[len(data) - 1] != 0x03:
             data = data + await self.queue.get()
 
+        ### TODO: Check response
+
         data = self.request.generate_request_override_duration("3hours")
         logger.info("Writing: " + str(binascii.hexlify(data)))
 
@@ -258,6 +262,8 @@ class Mower:
         data = await self.queue.get()
         if data[len(data) - 1] != 0x03:
             data = data + await self.queue.get()
+
+        ### TODO: Check response
 
     async def mower_pause(self):
         data = self.request.generate_request_pause()
@@ -274,6 +280,8 @@ class Mower:
         if data[len(data) - 1] != 0x03:
             data = data + await self.queue.get()
 
+        ### TODO: Check response
+
     async def mower_resume(self):
         data = self.request.generate_request_resume()
         logger.info("Writing: " + str(binascii.hexlify(data)))
@@ -288,6 +296,8 @@ class Mower:
         data = await self.queue.get()
         if data[len(data) - 1] != 0x03:
             data = data + await self.queue.get()
+
+        ### TODO: Check response
 
     async def disconnect(self):
         """
