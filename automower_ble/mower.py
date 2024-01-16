@@ -178,6 +178,8 @@ class Mower:
         if data[len(data) - 1] != 0x03:
             data = data + await self.queue.get()
 
+        return self.response.decode_response_is_charging(data)
+
     async def battery_level(self):
         """
             Query the mower battery level
