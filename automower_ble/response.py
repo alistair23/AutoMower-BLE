@@ -132,19 +132,19 @@ class MowerResponse:
         state = data[19]
 
         match state:
-            case 0:
-                return ""
-            case 1:
-                return "charging"
             case 2:
-                return "goingOut"
+                return ""
             case 3:
-                return "mowing"
+                return "charging"
             case 4:
+                return "goingOut"
+            case 5:
+                return "mowing"
+            case 6:
                 return "goingHome"
-            case 5:
+            case 7:
                 return "parked"
-            case 5:
+            case 8:
                 return "stoppedInGarden"
             case _:
                 return "unknown"
@@ -168,18 +168,34 @@ class MowerResponse:
         state = data[19]
 
         match state:
-            case 0:
-                return "off"
+            case 1:
+                return "paused"
             case 2:
                 return "stopped"
             case 3:
                 return "error"
             case 4:
-                return "pendingStart"
+                return "fatalError"
             case 5:
-                return "paused"
+                return "off"
             case 6:
-                return "mowing"
+                return "checkSafety"
+            case 7:
+                return "pendingStart"
+            case 8:
+                return "waitForSafetyPin"
+            case 9:
+                return "restricted"
+            case 10:
+                return "inOperation"
+            case 11:
+                return "unknown"
+            case 12:
+                return "connecting"
+            case 13:
+                return "pending"
+            case 14:
+                return "disconnected"
             case _:
                 return "unknown"
 
