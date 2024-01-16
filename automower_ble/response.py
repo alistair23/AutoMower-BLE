@@ -132,42 +132,6 @@ class MowerResponse:
         state = data[19]
 
         match state:
-            case 2:
-                return ""
-            case 3:
-                return "charging"
-            case 4:
-                return "goingOut"
-            case 5:
-                return "mowing"
-            case 6:
-                return "goingHome"
-            case 7:
-                return "parked"
-            case 8:
-                return "stoppedInGarden"
-            case _:
-                return "unknown"
-
-    def decode_response_mower_activity(self, data: bytearray):
-        self.decode_response_template(data)
-
-        # Length
-        if data[17] != 0x01:
-            return None
-
-        if data[18] != 0x00:
-            return None
-
-        if data[20] != crc(data, 1, len(data) - 3):
-            return None
-
-        if data[21] != 0x03:
-            return None
-
-        state = data[19]
-
-        match state:
             case 1:
                 return "paused"
             case 2:
@@ -199,6 +163,41 @@ class MowerResponse:
             case _:
                 return "unknown"
 
+    def decode_response_mower_activity(self, data: bytearray):
+        self.decode_response_template(data)
+
+        # Length
+        if data[17] != 0x01:
+            return None
+
+        if data[18] != 0x00:
+            return None
+
+        if data[20] != crc(data, 1, len(data) - 3):
+            return None
+
+        if data[21] != 0x03:
+            return None
+
+        state = data[19]
+
+        match state:
+            case 2:
+                return ""
+            case 3:
+                return "charging"
+            case 4:
+                return "goingOut"
+            case 5:
+                return "mowing"
+            case 6:
+                return "goingHome"
+            case 7:
+                return "parked"
+            case 8:
+                return "stoppedInGarden"
+            case _:
+                return "unknown"
 
 class TestStringMethods(unittest.TestCase):
     def test_decode_response_device_type(self):
