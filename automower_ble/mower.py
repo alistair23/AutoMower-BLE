@@ -97,6 +97,8 @@ class Mower:
 
         await self.client.start_notify(self.read_char, notification_handler)
 
+        await asyncio.sleep(5.0)
+
         i = 5
         while i > 0:
             try:
@@ -114,7 +116,6 @@ class Mower:
                 data = await self.queue.get()
             except asyncio.exceptions.CancelledError:
                 i = i - 1
-                await asyncio.sleep(15.0 * (5 - i))
                 continue
 
             break
