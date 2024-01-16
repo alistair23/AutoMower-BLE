@@ -140,6 +140,9 @@ class Mower:
 
         return True
 
+    async def is_conected(self) -> bool:
+        return self.client.is_conected
+
     async def get_model(self):
         """
             Get the mower model
