@@ -143,6 +143,66 @@ class Mower:
     async def is_connected(self) -> bool:
         return self.client.is_connected
 
+    async def probe_gatts(self, device):
+        if device is None:
+            logger.error(
+                "could not find device with address '%s'", self.address)
+            return False
+
+        logger.info("connecting to device...")
+        client = BleakClient(
+            device,
+            services=["98bd0001-0b0e-421a-84e5-ddbf75dc6de4"],
+            use_cached=True
+        )
+
+        await client.connect()
+        logger.info("connected")
+
+        manufacture = None
+        model = None
+        device_type = None
+
+        for service in client.services:
+            logger.debug("[Service] %s", service)
+
+            if service.uuid == "98bd0001-0b0e-421a-84e5-ddbf75dc6de4":
+                manufacture = service.description
+
+            for char in service.characteristics:
+                if "read" in char.properties:
+                    try:
+                        value = await client.read_gatt_char(char.uuid)
+                        logger.debug(
+                            "  [Characteristic] %s (%s), Value: %r",
+                            char,
+                            ",".join(char.properties),
+                            value,
+                        )
+                    except Exception as e:
+                        logger.error(
+                            "  [Characteristic] %s (%s), Error: %s",
+                            char,
+                            ",".join(char.properties),
+                            e,
+                        )
+
+                else:
+                    logger.debug(
+                        "  [Characteristic] %s (%s)", char, ",".join(char.properties)
+                    )
+
+                if char.uuid == "00002a00-0000-1000-8000-00805f9b34fb":
+                    model = await client.read_gatt_char(char)
+
+                if char.uuid == "98bd0004-0b0e-421a-84e5-ddbf75dc6de4":
+                    device_type = await client.read_gatt_char(char)
+
+
+        await client.disconnect()
+
+        return (manufacture, device_type.decode(), model.decode())
+
     async def get_model(self):
         """
             Get the mower model
