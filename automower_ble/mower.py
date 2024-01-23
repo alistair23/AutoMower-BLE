@@ -113,6 +113,8 @@ class Mower:
                     logger.info(chunk)
                     await self.client.write_gatt_char(self.write_char, chunk, response=False)
 
+                logger.debug("Finished writing")
+
                 data = await self.queue.get()
             except asyncio.exceptions.CancelledError:
                 i = i - 1
@@ -135,6 +137,8 @@ class Mower:
         ):
             logger.info(chunk)
             await self.client.write_gatt_char(self.write_char, chunk, response=False)
+
+        logger.debug("Finished writing")
 
         data = await self.queue.get()
 
@@ -217,6 +221,8 @@ class Mower:
             logger.info(chunk)
             await self.client.write_gatt_char(self.write_char, chunk, response=False)
 
+        logger.debug("Finished writing")
+
         data = await self.queue.get()
         if data[len(data) - 1] != 0x03:
             data = data + await self.queue.get()
@@ -233,6 +239,8 @@ class Mower:
         ):
             logger.info(chunk)
             await self.client.write_gatt_char(self.write_char, chunk, response=False)
+
+        logger.debug("Finished writing")
 
         data = await self.queue.get()
         if data[len(data) - 1] != 0x03:
@@ -254,6 +262,8 @@ class Mower:
             logger.info(chunk)
             await self.client.write_gatt_char(self.write_char, chunk, response=False)
 
+        logger.debug("Finished writing")
+
         data = await self.queue.get()
         if data[len(data) - 1] != 0x03:
             data = data + await self.queue.get()
@@ -271,6 +281,8 @@ class Mower:
             logger.info(chunk)
             await self.client.write_gatt_char(self.write_char, chunk, response=False)
 
+        logger.debug("Finished writing")
+
         data = await self.queue.get()
         if data[len(data) - 1] != 0x03:
             data = data + await self.queue.get()
@@ -287,6 +299,8 @@ class Mower:
         ):
             logger.info(chunk)
             await self.client.write_gatt_char(self.write_char, chunk, response=False)
+
+        logger.debug("Finished writing")
 
         data = await self.queue.get()
         if data[len(data) - 1] != 0x03:
@@ -309,6 +323,8 @@ class Mower:
             logger.info(chunk)
             await self.client.write_gatt_char(self.write_char, chunk, response=False)
 
+        logger.debug("Finished writing")
+
         data = await self.queue.get()
         if data[len(data) - 1] != 0x03:
             data = data + await self.queue.get()
@@ -324,6 +340,8 @@ class Mower:
         ):
             logger.info(chunk)
             await self.client.write_gatt_char(self.write_char, chunk, response=False)
+
+        logger.debug("Finished writing")
 
         data = await self.queue.get()
         if data[len(data) - 1] != 0x03:
@@ -342,6 +360,8 @@ class Mower:
             logger.info(chunk)
             await self.client.write_gatt_char(self.write_char, chunk, response=False)
 
+        logger.debug("Finished writing")
+
         data = await self.queue.get()
         if data[len(data) - 1] != 0x03:
             data = data + await self.queue.get()
@@ -358,6 +378,8 @@ class Mower:
         ):
             logger.info(chunk)
             await self.client.write_gatt_char(self.write_char, chunk, response=False)
+
+        logger.debug("Finished writing")
 
         data = await self.queue.get()
         if data[len(data) - 1] != 0x03:
