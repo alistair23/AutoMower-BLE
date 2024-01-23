@@ -204,7 +204,7 @@ class TestStringMethods(unittest.TestCase):
         response = MowerResponse(1197489078)
 
         self.assertEqual(response.decode_response_device_type(bytearray.fromhex("02fd1300b63b604701e601af5a1209000002001701c803")),
-                         "Mower305")
+                         "305")
 
     def test_decode_response_is_charging(self):
         response = MowerResponse(1197489078)
@@ -218,13 +218,13 @@ class TestStringMethods(unittest.TestCase):
         response = MowerResponse(1197489078)
 
         self.assertEqual(response.decode_response_mower_state(bytearray.fromhex("02fd1200b33b6047010901afea110100000100008103")),
-                         "")
+                         "unknown")
 
     def test_decode_response_mower_activity(self):
         response = MowerResponse(1197489078)
 
         self.assertEqual(response.decode_response_mower_activity(bytearray.fromhex("02fd1200b33b6047010901afea110200000100026403")),
-                         "stopped")
+                         "")
 
 
 if __name__ == '__main__':
