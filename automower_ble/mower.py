@@ -32,6 +32,27 @@ class Mower:
 
         self.queue = asyncio.Queue()
 
+    async def _get_response(self):
+        j = 10
+        while j > 0:
+            try:
+                data = self.queue.get_nowait()
+
+            except asyncio.QueueEmpty:
+                await asyncio.sleep(0.5)
+                j = j - 1
+                continue
+
+            break
+
+        if j == 0:
+            logger.error(
+                "Unable to communicate with device: '%s'", self.address)
+            await self.disconnect()
+            return None
+
+        return data
+
     async def connect(self, device) -> bool:
         """
             Connect to a device and setup the channel
@@ -115,7 +136,10 @@ class Mower:
 
                 logger.debug("Finished writing")
 
-                data = await self.queue.get()
+                data = await self._get_response()
+                if data == None:
+                    return False
+
             except asyncio.exceptions.CancelledError:
                 i = i - 1
                 continue
@@ -140,7 +164,9 @@ class Mower:
 
         logger.debug("Finished writing")
 
-        data = await self.queue.get()
+        data = await self._get_response()
+        if data == None:
+            return
 
         return True
 
@@ -223,7 +249,9 @@ class Mower:
 
         logger.debug("Finished writing")
 
-        data = await self.queue.get()
+        data = await self._get_response()
+        if data == None:
+            return
         if data[len(data) - 1] != 0x03:
             data = data + await self.queue.get()
 
@@ -242,7 +270,9 @@ class Mower:
 
         logger.debug("Finished writing")
 
-        data = await self.queue.get()
+        data = await self._get_response()
+        if data == None:
+            return
         if data[len(data) - 1] != 0x03:
             data = data + await self.queue.get()
 
@@ -264,7 +294,9 @@ class Mower:
 
         logger.debug("Finished writing")
 
-        data = await self.queue.get()
+        data = await self._get_response()
+        if data == None:
+            return
         if data[len(data) - 1] != 0x03:
             data = data + await self.queue.get()
 
@@ -283,7 +315,9 @@ class Mower:
 
         logger.debug("Finished writing")
 
-        data = await self.queue.get()
+        data = await self._get_response()
+        if data == None:
+            return
         if data[len(data) - 1] != 0x03:
             data = data + await self.queue.get()
 
@@ -302,7 +336,9 @@ class Mower:
 
         logger.debug("Finished writing")
 
-        data = await self.queue.get()
+        data = await self._get_response()
+        if data == None:
+            return
         if data[len(data) - 1] != 0x03:
             data = data + await self.queue.get()
 
@@ -325,7 +361,9 @@ class Mower:
 
         logger.debug("Finished writing")
 
-        data = await self.queue.get()
+        data = await self._get_response()
+        if data == None:
+            return
         if data[len(data) - 1] != 0x03:
             data = data + await self.queue.get()
 
@@ -343,7 +381,9 @@ class Mower:
 
         logger.debug("Finished writing")
 
-        data = await self.queue.get()
+        data = await self._get_response()
+        if data == None:
+            return
         if data[len(data) - 1] != 0x03:
             data = data + await self.queue.get()
 
@@ -362,7 +402,9 @@ class Mower:
 
         logger.debug("Finished writing")
 
-        data = await self.queue.get()
+        data = await self._get_response()
+        if data == None:
+            return
         if data[len(data) - 1] != 0x03:
             data = data + await self.queue.get()
 
@@ -381,7 +423,9 @@ class Mower:
 
         logger.debug("Finished writing")
 
-        data = await self.queue.get()
+        data = await self._get_response()
+        if data == None:
+            return
         if data[len(data) - 1] != 0x03:
             data = data + await self.queue.get()
 
