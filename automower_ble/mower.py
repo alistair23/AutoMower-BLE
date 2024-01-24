@@ -441,7 +441,6 @@ class Mower:
         await self.queue.put(None)
 
         logger.info("disconnecting...")
-        await self.client.unpair()
         await self.client.disconnect()
         logger.info("disconnected")
 
