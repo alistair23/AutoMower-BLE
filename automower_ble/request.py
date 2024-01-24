@@ -22,6 +22,7 @@ Requests = dict([
     ("pause", ((4586, 5), (0x00, 0x00, 0x00))),
     ("errorCode", ((4586, 6), (0x00, 0x00, 0x00))),
     ("overrideDuration", ((4658, 3), (0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00))),
+    ("park", ((4658, 5), (0x00, 0x00, 0x00))),
 ])
 
 
@@ -213,6 +214,10 @@ class MowerRequest:
 
     def generate_request_resume(self) -> bytearray:
         data = self.__generate_standard_request("resume")
+        return self.__finalise_standard_request(data)
+
+    def generate_request_park(self) -> bytearray:
+        data = self.__generate_standard_request("park")
         return self.__finalise_standard_request(data)
 
     def generate_request_mower_state(self) -> bytearray:

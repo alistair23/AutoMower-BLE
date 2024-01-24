@@ -431,6 +431,27 @@ class Mower:
 
         ### TODO: Check response
 
+    async def mower_park(self):
+        data = self.request.generate_request_park()
+        logger.info("Writing: " + str(binascii.hexlify(data)))
+
+        chunk_size = MTU_SIZE - 3
+        for chunk in (
+            data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
+        ):
+            logger.info(chunk)
+            await self.client.write_gatt_char(self.write_char, chunk, response=False)
+
+        logger.debug("Finished writing")
+
+        data = await self._get_response()
+        if data == None:
+            return
+        if data[len(data) - 1] != 0x03:
+            data = data + await self.queue.get()
+
+        ### TODO: Check response
+
     async def disconnect(self):
         """
             Disconnect from the mower, this should be called after every
