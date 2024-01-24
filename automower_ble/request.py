@@ -263,6 +263,14 @@ class MowerRequest:
                 data[19] = 0x2a
                 data[20] = 0x00
                 data[21] = 0x00
+            case "6hours":
+                data[15] = 0x00
+                data[16] = 0x04
+                data[17] = 0x00
+                data[18] = 0x60
+                data[19] = 0x54
+                data[20] = 0x00
+                data[21] = 0x00
             case _:
                 return None
 
