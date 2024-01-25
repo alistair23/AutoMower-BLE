@@ -182,19 +182,19 @@ class MowerResponse:
         state = data[19]
 
         match state:
-            case 2:
-                return ""
-            case 3:
+            case 0:
+                return "none"
+            case 1:
                 return "charging"
-            case 4:
+            case 2:
                 return "goingOut"
-            case 5:
+            case 3:
                 return "mowing"
-            case 6:
+            case 4:
                 return "goingHome"
-            case 7:
+            case 5:
                 return "parked"
-            case 8:
+            case 6:
                 return "stoppedInGarden"
             case _:
                 return "unknown"
@@ -224,7 +224,7 @@ class TestStringMethods(unittest.TestCase):
         response = MowerResponse(1197489078)
 
         self.assertEqual(response.decode_response_mower_activity(bytearray.fromhex("02fd1200b33b6047010901afea110200000100026403")),
-                         "")
+                         "goingOut")
 
 
 if __name__ == '__main__':
