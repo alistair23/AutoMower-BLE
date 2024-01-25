@@ -166,7 +166,7 @@ class Mower:
 
         data = await self._get_response()
         if data == None:
-            return
+            return None
 
         return True
 
@@ -251,7 +251,7 @@ class Mower:
 
         data = await self._get_response()
         if data == None:
-            return
+            return None
         if data[len(data) - 1] != 0x03:
             data = data + await self.queue.get()
 
@@ -272,7 +272,7 @@ class Mower:
 
         data = await self._get_response()
         if data == None:
-            return
+            return None
         if data[len(data) - 1] != 0x03:
             data = data + await self.queue.get()
 
@@ -296,7 +296,7 @@ class Mower:
 
         data = await self._get_response()
         if data == None:
-            return
+            return None
         if data[len(data) - 1] != 0x03:
             data = data + await self.queue.get()
 
@@ -317,7 +317,7 @@ class Mower:
 
         data = await self._get_response()
         if data == None:
-            return
+            return None
         if data[len(data) - 1] != 0x03:
             data = data + await self.queue.get()
 
@@ -338,7 +338,7 @@ class Mower:
 
         data = await self._get_response()
         if data == None:
-            return
+            return None
         if data[len(data) - 1] != 0x03:
             data = data + await self.queue.get()
 
@@ -363,7 +363,7 @@ class Mower:
 
         data = await self._get_response()
         if data == None:
-            return
+            return None
         if data[len(data) - 1] != 0x03:
             data = data + await self.queue.get()
 
@@ -383,7 +383,7 @@ class Mower:
 
         data = await self._get_response()
         if data == None:
-            return
+            return None
         if data[len(data) - 1] != 0x03:
             data = data + await self.queue.get()
 
@@ -404,7 +404,7 @@ class Mower:
 
         data = await self._get_response()
         if data == None:
-            return
+            return None
         if data[len(data) - 1] != 0x03:
             data = data + await self.queue.get()
 
@@ -425,7 +425,7 @@ class Mower:
 
         data = await self._get_response()
         if data == None:
-            return
+            return None
         if data[len(data) - 1] != 0x03:
             data = data + await self.queue.get()
 
@@ -446,7 +446,7 @@ class Mower:
 
         data = await self._get_response()
         if data == None:
-            return
+            return None
         if data[len(data) - 1] != 0x03:
             data = data + await self.queue.get()
 
