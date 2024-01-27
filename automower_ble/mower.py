@@ -337,9 +337,11 @@ class Mower:
         logger.debug("Finished writing")
 
         data = await self._get_response()
+        length = data[2]
+        logger.debug("Waiting for {length} bytes")
         if data == None:
             return None
-        if data[len(data) - 1] != 0x03:
+        if data[len(data) - 1] != 0x03 and len(data) != length:
             data = data + await self.queue.get()
 
         return self.response.decode_response_mower_activity(data)
