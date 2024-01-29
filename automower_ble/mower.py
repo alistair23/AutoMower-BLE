@@ -33,12 +33,13 @@ class Mower:
         self.queue = asyncio.Queue()
 
     async def _get_response(self):
-        j = 10
+        j = 20
         while j > 0:
             try:
                 data = self.queue.get_nowait()
 
             except asyncio.QueueEmpty:
+                logger.debug("...")
                 await asyncio.sleep(0.5)
                 j = j - 1
                 continue
@@ -52,6 +53,54 @@ class Mower:
             return None
 
         return data
+
+    async def _write_data(self, data):
+        logger.info("Writing: " + str(binascii.hexlify(data)))
+
+        chunk_size = MTU_SIZE - 3
+        for chunk in (
+            data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
+        ):
+            logger.info(chunk)
+            await self.client.write_gatt_char(self.write_char, chunk, response=False)
+
+        logger.debug("Finished writing")
+
+    async def _read_data(self):
+        data = await self._get_response()
+        length = data[2]
+        logger.debug("Waiting for {length} bytes")
+        if data == None:
+            return None
+        if data[len(data) - 1] != 0x03 and len(data) != length:
+            data = data + await self.queue.get()
+
+        return data
+
+    async def _request_response(self, request_data):
+        i = 5
+        while i > 0:
+            try:
+                await self._write_data(request_data)
+
+                response_data = await self._read_data()
+                if response_data == None:
+                    i = i - 1
+                    continue
+
+            except asyncio.exceptions.CancelledError:
+                i = i - 1
+                continue
+
+            break
+
+        if i == 0:
+            logger.error(
+                "Unable to communicate with device: '%s'", self.address)
+            await self.disconnect()
+            return None
+
+        return response_data
 
     async def connect(self, device) -> bool:
         """
@@ -120,53 +169,19 @@ class Mower:
 
         await asyncio.sleep(5.0)
 
-        i = 5
-        while i > 0:
-            try:
-                data = self.request.generate_request_setup_channel_id()
-                logger.info("Writing: " + str(binascii.hexlify(data)))
-
-                chunk_size = MTU_SIZE - 3
-                logger.debug("chunk_size: " + str(chunk_size))
-                for chunk in (
-                    data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
-                ):
-                    logger.info(chunk)
-                    await self.client.write_gatt_char(self.write_char, chunk, response=False)
-
-                logger.debug("Finished writing")
-
-                data = await self._get_response()
-                if data == None:
-                    return False
-
-            except asyncio.exceptions.CancelledError:
-                i = i - 1
-                continue
-
-            break
-
-        if i == 0:
-            logger.error(
-                "Unable to communicate with device: '%s'", self.address)
-            await self.disconnect()
+        request = self.request.generate_request_setup_channel_id()
+        response = await self._request_response(request)
+        if response == None:
             return False
 
-        data = self.request.generate_request_handshake()
-        logger.info("Writing: " + str(binascii.hexlify(data)))
+        ### TODO: Check response
 
-        chunk_size = MTU_SIZE - 3
-        for chunk in (
-            data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
-        ):
-            logger.info(chunk)
-            await self.client.write_gatt_char(self.write_char, chunk, response=False)
+        request = self.request.generate_request_handshake()
+        response = await self._request_response(request)
+        if response == None:
+            return False
 
-        logger.debug("Finished writing")
-
-        data = await self._get_response()
-        if data == None:
-            return None
+        ### TODO: Check response
 
         return True
 
@@ -237,220 +252,87 @@ class Mower:
         """
             Get the mower model
         """
-        data = self.request.generate_request_device_type()
-        logger.info("Writing: " + str(binascii.hexlify(data)))
+        request = self.request.generate_request_device_type()
+        response = await self._request_response(request)
+        if response == None:
+            return False
 
-        chunk_size = MTU_SIZE - 3
-        for chunk in (
-            data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
-        ):
-            logger.info(chunk)
-            await self.client.write_gatt_char(self.write_char, chunk, response=False)
-
-        logger.debug("Finished writing")
-
-        data = await self._get_response()
-        if data == None:
-            return None
-        if data[len(data) - 1] != 0x03:
-            data = data + await self.queue.get()
-
-        return self.response.decode_response_device_type(data)
+        return self.response.decode_response_device_type(response)
 
     async def is_charging(self):
-        data = self.request.generate_request_is_charging()
-        logger.info("Writing: " + str(binascii.hexlify(data)))
+        request = self.request.generate_request_is_charging()
+        response = await self._request_response(request)
+        if response == None:
+            return False
 
-        chunk_size = MTU_SIZE - 3
-        for chunk in (
-            data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
-        ):
-            logger.info(chunk)
-            await self.client.write_gatt_char(self.write_char, chunk, response=False)
-
-        logger.debug("Finished writing")
-
-        data = await self._get_response()
-        if data == None:
-            return None
-        if data[len(data) - 1] != 0x03:
-            data = data + await self.queue.get()
-
-        return self.response.decode_response_is_charging(data)
+        return self.response.decode_response_is_charging(response)
 
     async def battery_level(self):
         """
             Query the mower battery level
         """
-        data = self.request.generate_request_battery_level()
-        logger.info("Writing: " + str(binascii.hexlify(data)))
+        request = self.request.generate_request_battery_level()
+        response = await self._request_response(request)
+        if response == None:
+            return False
 
-        chunk_size = MTU_SIZE - 3
-        for chunk in (
-            data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
-        ):
-            logger.info(chunk)
-            await self.client.write_gatt_char(self.write_char, chunk, response=False)
-
-        logger.debug("Finished writing")
-
-        data = await self._get_response()
-        if data == None:
-            return None
-        if data[len(data) - 1] != 0x03:
-            data = data + await self.queue.get()
-
-        return self.response.decode_response_battery_level(data)
+        return self.response.decode_response_battery_level(response)
 
     async def mower_state(self):
-        data = self.request.generate_request_mower_state()
-        logger.info("Writing: " + str(binascii.hexlify(data)))
+        request = self.request.generate_request_mower_state()
+        response = await self._request_response(request)
+        if response == None:
+            return False
 
-        chunk_size = MTU_SIZE - 3
-        for chunk in (
-            data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
-        ):
-            logger.info(chunk)
-            await self.client.write_gatt_char(self.write_char, chunk, response=False)
-
-        logger.debug("Finished writing")
-
-        data = await self._get_response()
-        if data == None:
-            return None
-        if data[len(data) - 1] != 0x03:
-            data = data + await self.queue.get()
-
-        return self.response.decode_response_mower_state(data)
+        return self.response.decode_response_mower_state(response)
 
     async def mower_activity(self):
-        data = self.request.generate_request_mower_activity()
-        logger.info("Writing: " + str(binascii.hexlify(data)))
+        request = self.request.generate_request_mower_activity()
+        response = await self._request_response(request)
+        if response == None:
+            return False
 
-        chunk_size = MTU_SIZE - 3
-        for chunk in (
-            data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
-        ):
-            logger.info(chunk)
-            await self.client.write_gatt_char(self.write_char, chunk, response=False)
-
-        logger.debug("Finished writing")
-
-        data = await self._get_response()
-        length = data[2]
-        logger.debug("Waiting for {length} bytes")
-        if data == None:
-            return None
-        if data[len(data) - 1] != 0x03 and len(data) != length:
-            data = data + await self.queue.get()
-
-        return self.response.decode_response_mower_activity(data)
+        return self.response.decode_response_mower_activity(response)
 
     async def mower_override(self):
         """
             Force the mower to run 3 hours
         """
-
-        data = self.request.generate_request_mode_of_operation("manual")
-        logger.info("Writing: " + str(binascii.hexlify(data)))
-
-        chunk_size = MTU_SIZE - 3
-        for chunk in (
-            data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
-        ):
-            logger.info(chunk)
-            await self.client.write_gatt_char(self.write_char, chunk, response=False)
-
-        logger.debug("Finished writing")
-
-        data = await self._get_response()
-        if data == None:
-            return None
-        if data[len(data) - 1] != 0x03:
-            data = data + await self.queue.get()
+        request = self.request.generate_request_mode_of_operation("manual")
+        response = await self._request_response(request)
+        if response == None:
+            return False
 
         ### TODO: Check response
 
-        data = self.request.generate_request_override_duration("3hours")
-        logger.info("Writing: " + str(binascii.hexlify(data)))
-
-        chunk_size = MTU_SIZE - 3
-        for chunk in (
-            data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
-        ):
-            logger.info(chunk)
-            await self.client.write_gatt_char(self.write_char, chunk, response=False)
-
-        logger.debug("Finished writing")
-
-        data = await self._get_response()
-        if data == None:
-            return None
-        if data[len(data) - 1] != 0x03:
-            data = data + await self.queue.get()
+        request = self.request.generate_request_override_duration("3hours")
+        response = await self._request_response(request)
+        if response == None:
+            return False
 
         ### TODO: Check response
 
     async def mower_pause(self):
-        data = self.request.generate_request_pause()
-        logger.info("Writing: " + str(binascii.hexlify(data)))
-
-        chunk_size = MTU_SIZE - 3
-        for chunk in (
-            data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
-        ):
-            logger.info(chunk)
-            await self.client.write_gatt_char(self.write_char, chunk, response=False)
-
-        logger.debug("Finished writing")
-
-        data = await self._get_response()
-        if data == None:
-            return None
-        if data[len(data) - 1] != 0x03:
-            data = data + await self.queue.get()
+        request = self.request.generate_request_pause()
+        response = await self._request_response(request)
+        if response == None:
+            return False
 
         ### TODO: Check response
 
     async def mower_resume(self):
-        data = self.request.generate_request_resume()
-        logger.info("Writing: " + str(binascii.hexlify(data)))
-
-        chunk_size = MTU_SIZE - 3
-        for chunk in (
-            data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
-        ):
-            logger.info(chunk)
-            await self.client.write_gatt_char(self.write_char, chunk, response=False)
-
-        logger.debug("Finished writing")
-
-        data = await self._get_response()
-        if data == None:
-            return None
-        if data[len(data) - 1] != 0x03:
-            data = data + await self.queue.get()
+        request = self.request.generate_request_resume()
+        response = await self._request_response(request)
+        if response == None:
+            return False
 
         ### TODO: Check response
 
     async def mower_park(self):
-        data = self.request.generate_request_park()
-        logger.info("Writing: " + str(binascii.hexlify(data)))
-
-        chunk_size = MTU_SIZE - 3
-        for chunk in (
-            data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
-        ):
-            logger.info(chunk)
-            await self.client.write_gatt_char(self.write_char, chunk, response=False)
-
-        logger.debug("Finished writing")
-
-        data = await self._get_response()
-        if data == None:
-            return None
-        if data[len(data) - 1] != 0x03:
-            data = data + await self.queue.get()
+        request = self.request.generate_request_park()
+        response = await self._request_response(request)
+        if response == None:
+            return False
 
         ### TODO: Check response
 
