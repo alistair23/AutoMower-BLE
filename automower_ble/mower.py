@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 MTU_SIZE = 20
 
+
 class Mower:
     def __init__(self, channel_id: int, address):
         self.channel_id = channel_id
@@ -47,8 +48,7 @@ class Mower:
             break
 
         if j == 0:
-            logger.error(
-                "Unable to communicate with device: '%s'", self.address)
+            logger.error("Unable to communicate with device: '%s'", self.address)
             await self.disconnect()
             return None
 
@@ -59,7 +59,7 @@ class Mower:
 
         chunk_size = MTU_SIZE - 3
         for chunk in (
-            data[i: i + chunk_size] for i in range(0, len(data), chunk_size)
+            data[i : i + chunk_size] for i in range(0, len(data), chunk_size)
         ):
             logger.info(chunk)
             await self.client.write_gatt_char(self.write_char, chunk, response=False)
@@ -95,8 +95,7 @@ class Mower:
             break
 
         if i == 0:
-            logger.error(
-                "Unable to communicate with device: '%s'", self.address)
+            logger.error("Unable to communicate with device: '%s'", self.address)
             await self.disconnect()
             return None
 
@@ -104,22 +103,19 @@ class Mower:
 
     async def connect(self, device) -> bool:
         """
-            Connect to a device and setup the channel
+        Connect to a device and setup the channel
 
-            Returns True on success
+        Returns True on success
         """
         logger.info("starting scan...")
 
         if device is None:
-            logger.error(
-                "could not find device with address '%s'", self.address)
+            logger.error("could not find device with address '%s'", self.address)
             return False
 
         logger.info("connecting to device...")
         self.client = BleakClient(
-            device,
-            services=["98bd0001-0b0e-421a-84e5-ddbf75dc6de4"],
-            use_cached=True
+            device, services=["98bd0001-0b0e-421a-84e5-ddbf75dc6de4"], use_cached=True
         )
         await self.client.connect()
         logger.info("connected")
@@ -161,7 +157,9 @@ class Mower:
                 if char.uuid == "98bd0003-0b0e-421a-84e5-ddbf75dc6de4":
                     self.read_char = char
 
-        async def notification_handler(characteristic: BleakGATTCharacteristic, data: bytearray):
+        async def notification_handler(
+            characteristic: BleakGATTCharacteristic, data: bytearray
+        ):
             logger.info("Received: " + str(binascii.hexlify(data)))
             await self.queue.put(data)
 
@@ -190,15 +188,12 @@ class Mower:
 
     async def probe_gatts(self, device):
         if device is None:
-            logger.error(
-                "could not find device with address '%s'", self.address)
+            logger.error("could not find device with address '%s'", self.address)
             return False
 
         logger.info("connecting to device...")
         client = BleakClient(
-            device,
-            services=["98bd0001-0b0e-421a-84e5-ddbf75dc6de4"],
-            use_cached=True
+            device, services=["98bd0001-0b0e-421a-84e5-ddbf75dc6de4"], use_cached=True
         )
 
         await client.connect()
@@ -243,14 +238,13 @@ class Mower:
                 if char.uuid == "98bd0004-0b0e-421a-84e5-ddbf75dc6de4":
                     device_type = await client.read_gatt_char(char)
 
-
         await client.disconnect()
 
         return (manufacture, device_type.decode(), model.decode())
 
     async def get_model(self):
         """
-            Get the mower model
+        Get the mower model
         """
         request = self.request.generate_request_device_type()
         response = await self._request_response(request)
@@ -269,7 +263,7 @@ class Mower:
 
     async def battery_level(self):
         """
-            Query the mower battery level
+        Query the mower battery level
         """
         request = self.request.generate_request_battery_level()
         response = await self._request_response(request)
@@ -296,7 +290,7 @@ class Mower:
 
     async def mower_override(self):
         """
-            Force the mower to run 3 hours
+        Force the mower to run 3 hours
         """
         request = self.request.generate_request_mode_of_operation("manual")
         response = await self._request_response(request)
@@ -338,8 +332,8 @@ class Mower:
 
     async def disconnect(self):
         """
-            Disconnect from the mower, this should be called after every
-            `connect()` before the Python script exits
+        Disconnect from the mower, this should be called after every
+        `connect()` before the Python script exits
         """
 
         await self.client.stop_notify(self.read_char)
@@ -351,9 +345,7 @@ class Mower:
 
 
 async def main(mower):
-    device = await BleakScanner.find_device_by_address(
-            mower.address
-        )
+    device = await BleakScanner.find_device_by_address(mower.address)
 
     await mower.connect(device)
 
@@ -391,6 +383,7 @@ async def main(mower):
     # print("Mower activity: " + activity)
 
     await mower.disconnect()
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

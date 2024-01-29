@@ -25,7 +25,7 @@ class MowerResponse:
         if data[3] != 0x00:
             return None
 
-        id = self.channel_id.to_bytes(4, byteorder='little')
+        id = self.channel_id.to_bytes(4, byteorder="little")
         if data[4] != id[0]:
             return None
         if data[5] != id[1]:
@@ -199,33 +199,54 @@ class MowerResponse:
             case _:
                 return "unknown"
 
+
 class TestStringMethods(unittest.TestCase):
     def test_decode_response_device_type(self):
         response = MowerResponse(1197489078)
 
-        self.assertEqual(response.decode_response_device_type(bytearray.fromhex("02fd1300b63b604701e601af5a1209000002001701c803")),
-                         "305")
+        self.assertEqual(
+            response.decode_response_device_type(
+                bytearray.fromhex("02fd1300b63b604701e601af5a1209000002001701c803")
+            ),
+            "305",
+        )
 
     def test_decode_response_is_charging(self):
         response = MowerResponse(1197489078)
 
-        self.assertEqual(response.decode_response_is_charging(bytearray.fromhex("02fd1200b63b604701db01af0a101500000100011603")),
-                         True)
-        self.assertEqual(response.decode_response_is_charging(bytearray.fromhex("02fd1200b63b604701db01af0a101500000100004803")),
-                         False)
+        self.assertEqual(
+            response.decode_response_is_charging(
+                bytearray.fromhex("02fd1200b63b604701db01af0a101500000100011603")
+            ),
+            True,
+        )
+        self.assertEqual(
+            response.decode_response_is_charging(
+                bytearray.fromhex("02fd1200b63b604701db01af0a101500000100004803")
+            ),
+            False,
+        )
 
     def test_decode_response_mower_state(self):
         response = MowerResponse(1197489078)
 
-        self.assertEqual(response.decode_response_mower_state(bytearray.fromhex("02fd1200b33b6047010901afea110100000100008103")),
-                         "unknown")
+        self.assertEqual(
+            response.decode_response_mower_state(
+                bytearray.fromhex("02fd1200b33b6047010901afea110100000100008103")
+            ),
+            "unknown",
+        )
 
     def test_decode_response_mower_activity(self):
         response = MowerResponse(1197489078)
 
-        self.assertEqual(response.decode_response_mower_activity(bytearray.fromhex("02fd1200b33b6047010901afea110200000100026403")),
-                         "goingOut")
+        self.assertEqual(
+            response.decode_response_mower_activity(
+                bytearray.fromhex("02fd1200b33b6047010901afea110200000100026403")
+            ),
+            "goingOut",
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
