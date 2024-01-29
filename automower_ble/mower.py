@@ -35,23 +35,17 @@ class Mower:
 
     async def _get_response(self):
         j = 20
-        while j > 0:
-            try:
-                data = self.queue.get_nowait()
-
-            except asyncio.QueueEmpty:
-                logger.debug("...")
-                await asyncio.sleep(0.5)
-                j = j - 1
-                continue
-
-            break
+        while j > 0 and self.queue.empty():
+            logger.debug("...")
+            await asyncio.sleep(0.5)
+            j = j - 1
 
         if j == 0:
             logger.error("Unable to communicate with device: '%s'", self.address)
             await self.disconnect()
             return None
 
+        data = self.queue.get()
         return data
 
     async def _write_data(self, data):
@@ -69,7 +63,7 @@ class Mower:
     async def _read_data(self):
         data = await self._get_response()
         length = data[2]
-        logger.debug("Waiting for {length} bytes")
+        logger.debug("Waiting for %d bytes", length)
         if data == None:
             return None
         if data[len(data) - 1] != 0x03 and len(data) != length:
