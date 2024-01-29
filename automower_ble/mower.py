@@ -45,7 +45,7 @@ class Mower:
             await self.disconnect()
             return None
 
-        data = self.queue.get()
+        data = await self.queue.get()
         return data
 
     async def _write_data(self, data):
