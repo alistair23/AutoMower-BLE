@@ -34,18 +34,14 @@ class Mower:
         self.queue = asyncio.Queue()
 
     async def _get_response(self):
-        j = 20
-        while j > 0 and self.queue.empty():
-            logger.debug("...")
-            await asyncio.sleep(0.5)
-            j = j - 1
+        try:
+            data = await self.queue.get(block=True, timeout=10)
 
-        if j == 0:
+        except queue.Empty:
             logger.error("Unable to communicate with device: '%s'", self.address)
             await self.disconnect()
             return None
 
-        data = await self.queue.get()
         return data
 
     async def _write_data(self, data):
@@ -62,12 +58,26 @@ class Mower:
 
     async def _read_data(self):
         data = await self._get_response()
-        length = data[2]
-        logger.debug("Waiting for %d bytes", length)
+
         if data == None:
             return None
+
+        if len(data) < 2:
+            # We got such a small amount of data, let's try again
+            data = data + await self._get_response()
+
+            if len(data) < 2:
+                # Something is wrong
+                return None
+
+        length = data[2]
+
+        logger.debug("Waiting for %d bytes", length)
+
         if data[len(data) - 1] != 0x03 and len(data) != length:
-            data = data + await self.queue.get()
+            data = data + await self.queue.get(block=True, timeout=5)
+
+        logger.info("Final response: " + str(binascii.hexlify(data)))
 
         return data
 
@@ -75,6 +85,10 @@ class Mower:
         i = 5
         while i > 0:
             try:
+                # If there are previous responses, flush them out
+                while not self.queue.empty():
+                    await self.queue.get()
+
                 await self._write_data(request_data)
 
                 response_data = await self._read_data()
