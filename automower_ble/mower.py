@@ -35,9 +35,9 @@ class Mower:
 
     async def _get_response(self):
         try:
-            data = await self.queue.get(block=True, timeout=10)
+            data = await asyncio.wait_for(self.queue.get(), timeout=10)
 
-        except queue.Empty:
+        except TimeoutError:
             logger.error("Unable to communicate with device: '%s'", self.address)
             await self.disconnect()
             return None
@@ -75,7 +75,7 @@ class Mower:
         logger.debug("Waiting for %d bytes", length)
 
         if data[len(data) - 1] != 0x03 and len(data) != length:
-            data = data + await self.queue.get(block=True, timeout=5)
+            data = data + await asyncio.wait_for(self.queue.get(), timeout=5)
 
         logger.info("Final response: " + str(binascii.hexlify(data)))
 
