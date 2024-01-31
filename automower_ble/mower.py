@@ -39,7 +39,8 @@ class Mower:
 
         except TimeoutError:
             logger.error("Unable to communicate with device: '%s'", self.address)
-            await self.disconnect()
+            if await self.is_connected():
+                await self.disconnect()
             return None
 
         return data
@@ -104,7 +105,8 @@ class Mower:
 
         if i == 0:
             logger.error("Unable to communicate with device: '%s'", self.address)
-            await self.disconnect()
+            if await self.is_connected():
+                await self.disconnect()
             return None
 
         return response_data
