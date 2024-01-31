@@ -51,7 +51,6 @@ class Mower:
         for chunk in (
             data[i : i + chunk_size] for i in range(0, len(data), chunk_size)
         ):
-            logger.info(chunk)
             await self.client.write_gatt_char(self.write_char, chunk, response=False)
 
         logger.debug("Finished writing")
@@ -97,6 +96,7 @@ class Mower:
                     continue
 
             except asyncio.exceptions.CancelledError:
+                logger.debug("Received CancelledError")
                 i = i - 1
                 continue
 
