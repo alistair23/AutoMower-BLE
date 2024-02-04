@@ -70,7 +70,7 @@ class Mower:
                 # Something is wrong
                 return None
 
-        length = data[2]
+        length = data[2] + 4
 
         logger.debug("Waiting for %d bytes", length)
 
