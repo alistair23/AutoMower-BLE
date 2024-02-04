@@ -211,6 +211,13 @@ class TestStringMethods(unittest.TestCase):
             "305",
         )
 
+        self.assertEqual(
+            response.decode_response_device_type(
+                bytearray.fromhex("02fd130038e38f0b01dc01af5a1209000002000c005903")
+            ),
+            "315",
+        )
+
     def test_decode_response_is_charging(self):
         response = MowerResponse(1197489078)
 
