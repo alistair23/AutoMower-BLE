@@ -38,7 +38,7 @@ class Mower:
             data = await asyncio.wait_for(self.queue.get(), timeout=10)
 
         except TimeoutError:
-            logger.error("Unable to communicate with device: '%s'", self.address)
+            logger.error("Unable to get response from device: '%s'", self.address)
             if await self.is_connected():
                 await self.disconnect()
             return None
