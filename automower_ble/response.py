@@ -246,7 +246,6 @@ class TestStringMethods(unittest.TestCase):
             "error",
         )
 
-
     def test_decode_response_mower_activity(self):
         response = MowerResponse(1197489078)
 
