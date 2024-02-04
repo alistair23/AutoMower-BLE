@@ -237,6 +237,16 @@ class TestStringMethods(unittest.TestCase):
             "unknown",
         )
 
+        response = MowerResponse(876143061)
+
+        self.assertEqual(
+            response.decode_response_mower_state(
+                bytearray.fromhex("02fd1200d5e13834012301afea110200000100033a03")
+            ),
+            "error",
+        )
+
+
     def test_decode_response_mower_activity(self):
         response = MowerResponse(1197489078)
 
