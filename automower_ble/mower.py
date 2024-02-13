@@ -74,7 +74,7 @@ class Mower:
 
         logger.debug("Waiting for %d bytes", length)
 
-        if data[len(data) - 1] != 0x03 and len(data) != length:
+        while len(data) != length:
             data = data + await asyncio.wait_for(self.queue.get(), timeout=5)
 
         logger.info("Final response: " + str(binascii.hexlify(data)))
