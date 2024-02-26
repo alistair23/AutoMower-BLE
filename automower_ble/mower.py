@@ -39,7 +39,7 @@ class Mower:
 
         except TimeoutError:
             logger.error("Unable to get response from device: '%s'", self.address)
-            if await self.is_connected():
+            if self.is_connected():
                 await self.disconnect()
             return None
 
@@ -113,7 +113,7 @@ class Mower:
 
         if i == 0:
             logger.error("Unable to communicate with device: '%s'", self.address)
-            if await self.is_connected():
+            if self.is_connected():
                 await self.disconnect()
             return None
 
@@ -201,7 +201,7 @@ class Mower:
 
         return True
 
-    async def is_connected(self) -> bool:
+    def is_connected(self) -> bool:
         return self.client.is_connected
 
     async def probe_gatts(self, device):
