@@ -75,7 +75,15 @@ class Mower:
         logger.debug("Waiting for %d bytes", length)
 
         while len(data) != length:
-            data = data + await asyncio.wait_for(self.queue.get(), timeout=5)
+            try:
+                data = data + await asyncio.wait_for(self.queue.get(), timeout=5)
+            except TimeoutError:
+                logger.error(
+                    "Unable to get full response from device: '%s', currently have"
+                    + str(binascii.hexlify(data)),
+                    self.address,
+                )
+                return None
 
         logger.info("Final response: " + str(binascii.hexlify(data)))
 
