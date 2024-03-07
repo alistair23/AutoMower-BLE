@@ -62,11 +62,11 @@ class Mower:
         if data == None:
             return None
 
-        if len(data) < 2:
+        if len(data) < 3:
             # We got such a small amount of data, let's try again
             data = data + await self._get_response()
 
-            if len(data) < 2:
+            if len(data) < 3:
                 # Something is wrong
                 return None
 
