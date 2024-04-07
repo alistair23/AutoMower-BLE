@@ -365,6 +365,11 @@ class Mower:
 async def main(mower):
     device = await BleakScanner.find_device_by_address(mower.address)
 
+    if device is None:
+        print("Unable to connect to device address: " + mower.address)
+        print("Please make sure the device address is correct, the device is powered on and nearby")
+        return
+
     await mower.connect(device)
 
     model = await mower.get_model()
