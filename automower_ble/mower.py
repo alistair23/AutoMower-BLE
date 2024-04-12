@@ -298,6 +298,13 @@ class Mower:
 
         return self.response.decode_response_mower_state(response)
 
+    async def mower_next_start_time(self):
+        request = self.request.generate_request_next_start_time()
+        response = await self._request_response(request)
+        if response == None:
+            return False
+        return self.response.decode_response_start_time(response)
+
     async def mower_activity(self):
         request = self.request.generate_request_mower_activity()
         response = await self._request_response(request)
@@ -389,6 +396,12 @@ async def main(mower):
 
     activity = await mower.mower_activity()
     print("Mower activity: " + activity)
+
+    next_start_time = await mower.mower_next_start_time()
+    if next_start_time:
+        print("Next start time: " + next_start_time)
+    else:
+        print("No next start time")
 
     # print("Running for 3 hours")
     # await mower.mower_override()
