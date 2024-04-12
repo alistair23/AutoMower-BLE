@@ -6,6 +6,7 @@
 
 import unittest
 import binascii
+from datetime import datetime, timezone
 
 from .models import MowerModels
 from .helpers import crc
@@ -112,6 +113,30 @@ class MowerResponse:
             return None
 
         return data[19]
+
+    def decode_response_start_time(self, data: bytearray):
+        self.decode_response_template(data)
+
+        # Length
+        if data[17] != 0x04:
+            return None
+
+        if data[18] != 0x00:
+            return None
+        
+        # Todo: fix this/refactor code
+        #if data[20] != crc(data, 1, len(data) - 3):
+        #    return None
+#
+        #if data[21] != 0x03:
+        #    return None
+#
+        unixtimestamp = int.from_bytes(data[19:23], byteorder='little', signed=False)
+        if unixtimestamp == 0: # Mower is not scheduled to start / parked indefinitely
+            return None
+        else:
+            start_time = datetime.fromtimestamp(unixtimestamp, tz=timezone.utc) # The mower does not have a timezone and therefore utc must be used for parsing
+            return start_time.strftime('%Y-%m-%d %H:%M:%S')
 
     def decode_response_mower_state(self, data: bytearray):
         self.decode_response_template(data)
