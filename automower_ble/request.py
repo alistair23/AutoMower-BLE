@@ -25,6 +25,9 @@ Requests = dict(
         ("overrideDuration", ((4658, 3), (0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00))),
         ("park", ((4658, 5), (0x00, 0x00, 0x00))),
         ("nextStartTime", ((4658, 1), (0x00, 0x00, 0x00))),
+        ("numberOfMessages", ((4730, 0), (0x00, 0x00, 0x00))),
+        ("getMessage", ((4730, 1), (0x00, 0x00, 0x00, 0x22, 0x00, 0x00, 0x00))), # change 0x22 to get other messages
+        ("getStatuses", ((4726, 0), (0x00, 0x00, 0x00))),
     ]
 )
 
@@ -193,6 +196,10 @@ class MowerRequest:
         data.append(pin[0])
         data.append(pin[1])
 
+        return self.__finalise_standard_request(data)
+
+    def generate_general_request(self, request_type) -> bytearray:
+        data = self.__generate_standard_request(request_type)
         return self.__finalise_standard_request(data)
 
     def generate_request_device_type(self) -> bytearray:
