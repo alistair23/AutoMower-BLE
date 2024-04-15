@@ -9,11 +9,15 @@
 import argparse
 import asyncio
 import logging
+import json
+from importlib.resources import files
 
 import binascii
 
 from .request import *
 from .response import MowerResponse
+from .protocol import Command
+from .models import MowerModels
 
 from bleak import BleakClient, BleakScanner
 from bleak.backends.characteristic import BleakGATTCharacteristic
@@ -32,6 +36,10 @@ class Mower:
         self.response = MowerResponse(channel_id)
 
         self.queue = asyncio.Queue()
+
+        with files("automower_ble").joinpath("protocol.json").open("r") as f:
+            # Load the JSON file
+            self.protocol = json.load(f)
 
     async def _get_response(self):
         try:
@@ -279,6 +287,20 @@ class Mower:
 
         return self.response.decode_response_is_charging(response)
 
+    async def get_parameter(self, parameter_name: str, **kwargs):
+        # request = self.request.generate_request_get_parameter(parameter)
+        command = Command(self.channel_id, self.protocol[parameter_name])
+        request = command.generate_request(**kwargs)
+        response = await self._request_response(request)
+        if response == None:
+            return None
+
+        response_dict = command.parse_response(response)
+        if len(response_dict) == 1:
+            return response_dict["response"]
+        else:
+            return response_dict
+
     async def battery_level(self):
         """
         Query the mower battery level
@@ -308,9 +330,9 @@ class Mower:
     async def test_response(self, request_type):
         request = self.request.generate_general_request(request_type)
         response = await self._request_response(request)
-        #if response == None:
+        # if response == None:
         #    return False
-        #return self.response.decode_response_start_time(response)
+        # return self.response.decode_response_start_time(response)
 
     async def mower_activity(self):
         request = self.request.generate_request_mower_activity()
@@ -386,16 +408,16 @@ async def main(mower):
 
     await mower.connect(device)
 
-    model = await mower.get_model()
-    print("Connected to: " + model)
+    model = await mower.get_parameter("deviceType")
+    print("Connected to: " + MowerModels[(model["deviceType"], model["deviceSubType"])])
 
-    charging = await mower.is_charging()
+    charging = await mower.get_parameter("isCharging")
     if charging:
         print("Mower is charging")
     else:
         print("Mower is not charging")
 
-    battery_level = await mower.battery_level()
+    battery_level = await mower.get_parameter("batteryLevel")
     print("Battery is: " + str(battery_level) + "%")
 
     state = await mower.mower_state()

@@ -1,0 +1,60 @@
+{
+    "nextStartTime": {
+        "major": 4658,
+        "minor": 1,
+        "responseType": "tUnixTime",
+        "description": "Next start time, if available."
+    },
+    "batteryLevel": {
+        "major": 4106,
+        "minor": 20,
+        "responseType": "uint8",
+        "description": "Battery level in percent."
+    },
+    "isCharging": {
+        "major": 4106,
+        "minor": 21,
+        "responseType": "uint8",
+        "description": "Indicates if the mower is charging."
+    },
+    "deviceType": {
+        "major": 4698,
+        "minor": 9,
+        "responseType": {
+            "deviceType": "uint8",
+            "deviceSubType": "uint8"
+        },
+        "description": "Device type tuple."
+    },
+    "numberOfMessages": {
+        "major": 4730,
+        "minor": 0,
+        "responseType": "uint32",
+        "description": "Number of messages in the message log."
+    },
+    "getMessage": {
+        "major": 4730,
+        "minor": 1,
+        "requestType": {
+            "messageId": "uint32"
+        },
+        "responseType": {
+            "messageTime": "tUnixTime",
+            "code": "uint32",
+            "severity": "uint8"
+        }
+    },
+    "getStatuses": {
+        "major": 4726,
+        "minor": 0,
+        "responseType": {
+            "totalRunningTime": "uint32",
+            "totalCuttingTime": "uint32",
+            "totalChargingTime": "uint32",
+            "totalSearchingTime": "uint32",
+            "numberOfCollisions": "uint32",
+            "numberOfChargingCycles": "uint32",
+            "cuttingBladeUsageTime": "uint32"
+        }
+    }
+}
