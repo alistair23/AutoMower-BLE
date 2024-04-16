@@ -9,6 +9,7 @@
 import argparse
 import asyncio
 import logging
+from datetime import datetime, timezone
 
 import binascii
 
@@ -399,7 +400,8 @@ async def main(mower):
 
     next_start_time = await mower.mower_next_start_time()
     if next_start_time:
-        print("Next start time: " + next_start_time)
+        dt_start_time = datetime.fromtimestamp(next_start_time, tz=timezone.utc) # The mower does not have a timezone and therefore utc must be used for parsing
+        print("Next start time: " + dt_start_time.strftime("%Y-%m-%d %H:%M:%S"))
     else:
         print("No next start time")
 
