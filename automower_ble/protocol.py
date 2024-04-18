@@ -56,13 +56,16 @@ class Command:
         request_data = bytearray()
         if self.request_data_type is not None:
             for request_name, request_type in self.request_data_type.items():
+                if request_name not in kwargs:
+                    raise ValueError("Missing request parameter: " + request_name + " for command (" + str(self.major) + ", " + str(self.minor)+")")
+
                 if request_type == "uint32":
                     request_length += 4
                     request_data += kwargs[request_name].to_bytes(4, byteorder="little")
-                elif self.request_type == "uint16":
+                elif request_type == "uint16":
                     request_length += 2
                     request_data += kwargs[request_name].to_bytes(2, byteorder="little")
-                elif self.request_type == "uint8":
+                elif request_type == "uint8":
                     request_length += 1
                     request_data += kwargs[request_name].to_bytes(1, byteorder="little")
                 else:
@@ -91,13 +94,15 @@ class Command:
         response = dict()
         dpos = 0 # data position
         for name, dtype in self.response_data_type.items(): 
-            if (dtype == "tUnixTime") or (dtype == "uint32"):
+            if (dtype == "no_response"):
+                return None
+            elif (dtype == "tUnixTime") or (dtype == "uint32"):
                 response[name]=int.from_bytes(data[dpos : dpos + 4], byteorder="little")
                 dpos += 4
             elif dtype == "uint16":
                 response[name]=int.from_bytes(data[dpos : dpos + 2], byteorder="little")
                 dpos += 2
-            elif dtype == "uint8":
+            elif (dtype == "uint8") or (dtype == "bool"):
                 response[name] = data[dpos]
                 dpos += 1
             else:
@@ -107,17 +112,45 @@ class Command:
 
         return response
 
-    def __str__(self):
-        return "Command: %s, %s" % (self.name, self.command)
-if __name__ == "__main__":
-    import json
-    with open("protocol.json", "r") as f:
-        protocol = json.load(f)
-    for commandname, data_structure in protocol.items():
-        cmd = Command(1197489075, data_structure)
-        # print(cmd)
-        if commandname == "getMessage":
-            print(binascii.hexlify(cmd.generate_request(messageId=26)))
-        else:
-            print(binascii.hexlify(cmd.generate_request()))
 
+def generate_request_setup_channel_id(channel_id: int) -> bytearray:
+    """
+    Setup the channelID with an Automower, this is the first
+    command that should be sent
+    """
+    data = bytearray.fromhex("02fd160000000000002e1400000000000000004d61696e00")
+
+    # New ChannelID
+    id = channel_id.to_bytes(4, byteorder="little")
+    data[11] = id[0]
+    data[12] = id[1]
+    data[13] = id[2]
+    data[14] = id[3]
+
+    # CRC and end byte
+    data[9] = crc(data, 1, 8)
+    data.append(crc(data, 1, len(data) - 1))
+    data.append(0x03)
+
+    return data
+
+
+def generate_request_handshake(channel_id: int) -> bytearray:
+    """
+    Generate a request handshake. This should be called after
+    the channel id is set up but before other commands
+    """
+    data = bytearray.fromhex("02fd0a000000000000d00801")
+
+    id = channel_id.to_bytes(4, byteorder="little")
+    data[4] = id[0]
+    data[5] = id[1]
+    data[6] = id[2]
+    data[7] = id[3]
+
+    # CRCs and end byte
+    data[9] = crc(data, 1, 8)
+    data.append(crc(data, 1, len(data) - 1))
+    data.append(0x03)
+
+    return data

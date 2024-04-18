@@ -14,9 +14,9 @@ from importlib.resources import files
 
 import binascii
 
-from .request import *
-from .response import MowerResponse
-from .protocol import Command
+# from .request import *
+# from .response import MowerResponse
+from .protocol import Command, generate_request_setup_channel_id, generate_request_handshake
 from .models import MowerModels
 
 from bleak import BleakClient, BleakScanner
@@ -32,8 +32,8 @@ class Mower:
         self.channel_id = channel_id
         self.address = address
 
-        self.request = MowerRequest(channel_id)
-        self.response = MowerResponse(channel_id)
+        #self.request = MowerRequest(channel_id)
+        #self.response = MowerResponse(channel_id)
 
         self.queue = asyncio.Queue()
 
@@ -193,14 +193,14 @@ class Mower:
 
         await asyncio.sleep(5.0)
 
-        request = self.request.generate_request_setup_channel_id()
+        request = generate_request_setup_channel_id(self.channel_id)
         response = await self._request_response(request)
         if response == None:
             return False
 
         ### TODO: Check response
 
-        request = self.request.generate_request_handshake()
+        request = generate_request_handshake(self.channel_id)
         response = await self._request_response(request)
         if response == None:
             return False
@@ -420,19 +420,24 @@ async def main(mower):
     battery_level = await mower.get_parameter("batteryLevel")
     print("Battery is: " + str(battery_level) + "%")
 
-    state = await mower.mower_state()
-    print("Mower state: " + state)
+    state = await mower.get_parameter("mowerState")
+    print("Mower state: " + str(state))
 
-    activity = await mower.mower_activity()
-    print("Mower activity: " + activity)
+    activity = await mower.get_parameter("mowerActivity")
+    print("Mower activity: " + str(activity))
 
-    next_start_time = await mower.mower_next_start_time()
+    next_start_time = await mower.get_parameter("nextStartTime")
     if next_start_time:
-        print("Next start time: " + next_start_time)
+        print("Next start time: " + str(next_start_time))
     else:
         print("No next start time")
 
-    await mower.test_response("getStatuses")
+    statuses = await mower.get_parameter("getStatuses")
+    for status, value in statuses.items():
+        print(status, value)
+
+    serial_number = await mower.get_parameter("serialNumber")
+    print("Serial number: " + str(serial_number))
     # print("Running for 3 hours")
     # await mower.mower_override()
 
