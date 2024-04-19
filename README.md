@@ -34,3 +34,35 @@ python3 ./mower.py --address D8:B6:73:40:07:37
 ```
 
 You can uncomment parts of `async def main(mower)` to send commands
+
+## Debugging on an android phone
+
+You can get Bluetooth debug logs from an android phone which will help for unknown codes
+or implementation of extra devices. To debug you need to enable developer mode on your
+android handset/tablet (and have the manufacturer app installed to communicate with your mower)
+
+To enable debug mode on android:
+```shell
+Go into settings and System (Sometimes this is in About phone). Look for the "Build  number" entry.
+Tap this several times, onscreen you should then see a note confirming by tapping 7 times developer mode
+will be enabled.
+Once enabled, click BACK and you'll see a "Developer Options" menu.
+In there scroll to find "Enable Bluetooth HCI snoop log".
+Set this to "Enabled"
+You then need to turn bluetooth OFF then back ON to enable the logging.
+Go into your mower app and carry out the commands, making a note of precise time you send the command to the mower.
+Once you've captured the commands, to retrieve the log you can either grab it using your phones file browser.
+The file location is /data/misc/bluetooth/logs
+The filename is btsnoop_hci.log
+(This varies, for example Samsung phones store them elsewhere)
+
+An alternative is to use the adb via usb to retrieve the log. Plug your phone in via usb and use adb to download your
+bug report:
+  adb bugreport MyFilename
+(This will generate a bugreport and save it as MyFilename.zip)
+Extract that zip file and the bluetooth HCI snoop file is in FS/data/log/bt/btsnoop_hci.log
+```
+
+These bluetooth hci snoop files (btsnoop_hci.log) are in wireshark file format so use wireshark to view them.
+You can then see the commands sent and received from your mower and can then decode/investigate the commands.
+
