@@ -77,7 +77,10 @@
     {
         "major": 4586,
         "minor": 1,
-        "responseType": "uint8",
+        "requestType": {
+            "mode": "uint8"
+        },
+        "responseType": "no_response",        
         "description": "Mode of operation."
     },
     "mowerState":
