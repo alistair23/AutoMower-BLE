@@ -24,6 +24,7 @@ Requests = dict(
         ("errorCode", ((4586, 6), (0x00, 0x00, 0x00))),
         ("overrideDuration", ((4658, 3), (0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00))),
         ("park", ((4658, 5), (0x00, 0x00, 0x00))),
+        ("nextStartTime", ((4658, 1), (0x00, 0x00, 0x00))),
     ]
 )
 
@@ -232,6 +233,10 @@ class MowerRequest:
 
     def generate_request_error_code(self) -> bytearray:
         data = self.__generate_standard_request("errorCode")
+        return self.__finalise_standard_request(data)
+
+    def generate_request_next_start_time(self) -> bytearray:
+        data = self.__generate_standard_request("nextStartTime")
         return self.__finalise_standard_request(data)
 
     def generate_request_mode_of_operation(self, mode) -> bytearray:

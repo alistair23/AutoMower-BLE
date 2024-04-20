@@ -113,6 +113,25 @@ class MowerResponse:
 
         return data[19]
 
+    def decode_response_start_time(self, data: bytearray)->int | None:
+        self.decode_response_template(data)
+
+        # Length
+        if data[17] != 0x04:
+            return None
+
+        if data[18] != 0x00:
+            return None
+        
+        if data[23] != crc(data, 1, len(data) - 3):
+            return None
+
+        if data[24] != 0x03:
+            return None
+
+        unixtimestamp = int.from_bytes(data[19:23], byteorder='little', signed=False)
+        return unixtimestamp
+
     def decode_response_mower_state(self, data: bytearray):
         self.decode_response_template(data)
 
