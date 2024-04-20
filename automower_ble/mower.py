@@ -9,6 +9,7 @@
 import argparse
 import asyncio
 import logging
+from datetime import datetime, timezone
 import json
 from importlib.resources import files
 
@@ -326,13 +327,6 @@ class Mower:
         if response == None:
             return False
         return self.response.decode_response_start_time(response)
-
-    async def test_response(self, request_type):
-        request = self.request.generate_general_request(request_type)
-        response = await self._request_response(request)
-        # if response == None:
-        #    return False
-        # return self.response.decode_response_start_time(response)
 
     async def mower_activity(self):
         request = self.request.generate_request_mower_activity()
