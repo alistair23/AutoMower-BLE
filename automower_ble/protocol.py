@@ -1,5 +1,39 @@
 import binascii
 from .helpers import crc
+from enum import Enum
+
+class ModeOfOperation(Enum):
+    # ProtocolTypes$IMowerAppMowerMode, used in modeOfOperation: 4586, 1
+    # Comments from: https://developer.husqvarnagroup.cloud/apis/Automower+Connect+API?tab=status%20description%20and%20error%20codes#user-content-mode
+    AUTO = 0
+    MANUAL = 1
+    HOME = 2  # Mower goes home and parks forever. Week schedule is not used. Cannot be overridden with forced mowing.
+    DEMO = 3  # Same as main area, but shorter times. No blade operation
+    POI = 4
+
+class MowerState(Enum):
+    # ProtocolTypes$IMowerAppState, used in mowerState: 4586, 2
+    # Comments from: https://developer.husqvarnagroup.cloud/apis/Automower+Connect+API?tab=status%20description%20and%20error%20codes#user-content-state
+    OFF = 0  # Mower is turned off.
+    WAIT_FOR_SAFETYPIN = 1
+    STOPPED = 2  # Mower is stopped requires manual action.
+    FATAL_ERROR = 3
+    PENDING_START = 4
+    PAUSED = 5  # Mower has been paused by user.
+    IN_OPERATION = 6  # See value in activity for status.
+    RESTRICTED = 7 # Mower can currently not mow due to week calender, or override park.
+    ERROR = 8  # An error has occurred. Check errorCode. Mower requires manual action.
+
+class MowerActivity(Enum):
+    # ProtocolTypes$IMowerAppActivity, used in mowerActivity: 4586, 3
+    # Comments from: https://developer.husqvarnagroup.cloud/apis/Automower+Connect+API?tab=status%20description%20and%20error%20codes#user-content-activity
+    NONE = 0
+    CHARGING = 1  # Mower is charging in station due to low battery.
+    GOING_OUT = 2
+    MOWING = 3  # Mower is mowing lawn. If in demo mode the blades are not in operation.
+    GOING_HOME = 4  # Mower is going home to the charging station.
+    PARKED = 5
+    STOPPED_IN_GARDEN = 6  # Mower has stopped. Needs manual action to resume
 
 class Command:
     def __init__(
