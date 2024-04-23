@@ -56,7 +56,7 @@ class TestRequestMethods(unittest.TestCase):
             command.parse_response(
                 bytearray.fromhex("02fd1200d5e13834012301afea110200000100033a03")
             )['response'],
-            3, # 3=error
+            MowerState.FATAL_ERROR.value,
         )
 
     def test_decode_response_mower_activity(self):
@@ -66,7 +66,7 @@ class TestRequestMethods(unittest.TestCase):
             response.parse_response(
                 bytearray.fromhex("02fd1200b33b6047010901afea110200000100026403")
             )["response"],
-            2,  # 2 = goingOut
+            MowerActivity.GOING_OUT.value,  # 2 = goingOut
         )
 
 if __name__ == "__main__":

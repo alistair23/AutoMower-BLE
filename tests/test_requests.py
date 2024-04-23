@@ -9,24 +9,24 @@ class TestRequestMethods(unittest.TestCase):
             self.protocol = json.load(f)  # Load the parameters to have them available
 
     def test_generate_request_setup_channel_id(self):
-        request_one = 1197489075
-        request_two = 1739453030
+        client_one = BLEClient(1197489075, "00:00:00:00:00:00")
+        client_two = BLEClient(1739453030, "00:00:00:00:00:00")
 
         self.assertEqual(
-            binascii.hexlify(generate_request_setup_channel_id(channel_id=request_one)),
+            binascii.hexlify(client_one.generate_request_setup_channel_id()),
             b"02fd160000000000002e14b33b6047000000004d61696e001b03",
         )
         self.assertEqual(
-            binascii.hexlify(generate_request_handshake(channel_id=request_one)),
+            binascii.hexlify(client_one.generate_request_handshake()),
             b"02fd0a00b33b6047005d08012803",
         )
 
         self.assertEqual(
-            binascii.hexlify(generate_request_setup_channel_id(channel_id=request_two)),
+            binascii.hexlify(client_two.generate_request_setup_channel_id()),
             b"02fd160000000000002e1466f2ad67000000004d61696e003403",
         )
         self.assertEqual(
-            binascii.hexlify(generate_request_handshake(channel_id=request_two)),
+            binascii.hexlify(client_two.generate_request_handshake()),
             b"02fd0a0066f2ad6700f908012803",
         )
 
