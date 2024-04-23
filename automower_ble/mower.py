@@ -11,10 +11,9 @@ import asyncio
 import logging
 from datetime import datetime, timezone
 
-# from .request import *
-# from .response import MowerResponse
 from .protocol import *
 from .models import MowerModels
+from .error_codes import ErrorCodes
 
 from bleak import BleakScanner
 
@@ -52,7 +51,7 @@ class Mower(BLEClient):
 
     async def get_model(self)->str|None:
         """Get the mower model"""
-        # Todo: Change behaviour to use enum
+        # Todo: Change MowerModels to an enum?
         model = await self.get_parameter("deviceType")
         if model is None:
             return None
@@ -92,7 +91,7 @@ class Mower(BLEClient):
 
     async def mower_override(self, duration_hours: int = 3)->None:
         """
-        Force the mower to run 3 hours
+        Force the mower to run for the specified duration in hours.
         """
         # Set mode of operation to manual:
         await self.set_parameter("modeOfOperation", mode=ModeOfOperation.MANUAL)
@@ -149,6 +148,11 @@ async def main(mower: Mower):
 
     serial_number = await mower.get_parameter("serialNumber")
     print("Serial number: " + str(serial_number))
+
+    last_message = await mower.get_parameter("getMessage", messageId=0)
+    print("Last message: ")
+    print("\t" + datetime.fromtimestamp(last_message["messageTime"], timezone.utc).strftime("%Y-%m-%d %H:%M:%S"))
+    print("\t" + ErrorCodes(last_message["code"]).name)
     # print("Running for 3 hours")
     # await mower.mower_override()
 
