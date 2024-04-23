@@ -81,7 +81,7 @@
             "mode": "uint8"
         },
         "responseType": "no_response",        
-        "description": "Mode of operation."
+        "description": "Set mode of operation."
     },
     "mowerState":
     {

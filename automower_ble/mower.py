@@ -10,286 +10,34 @@ import argparse
 import asyncio
 import logging
 from datetime import datetime, timezone
-import json
-from importlib.resources import files
-
-import binascii
 
 # from .request import *
 # from .response import MowerResponse
-from .protocol import Command, generate_request_setup_channel_id, generate_request_handshake
+from .protocol import *
 from .models import MowerModels
 
-from bleak import BleakClient, BleakScanner
-from bleak.backends.characteristic import BleakGATTCharacteristic
+from bleak import BleakScanner
 
 logger = logging.getLogger(__name__)
 
 MTU_SIZE = 20
 
 
-class Mower:
+class Mower(BLEClient):
     def __init__(self, channel_id: int, address):
-        self.channel_id = channel_id
-        self.address = address
+        super().__init__(channel_id, address)
 
-        #self.request = MowerRequest(channel_id)
-        #self.response = MowerResponse(channel_id)
-
-        self.queue = asyncio.Queue()
-
-        with files("automower_ble").joinpath("protocol.json").open("r") as f:
-            # Load the JSON file
-            self.protocol = json.load(f)
-
-    async def _get_response(self):
-        try:
-            data = await asyncio.wait_for(self.queue.get(), timeout=10)
-
-        except TimeoutError:
-            logger.error("Unable to get response from device: '%s'", self.address)
-            if self.is_connected():
-                await self.disconnect()
-            return None
-
-        return data
-
-    async def _write_data(self, data):
-        logger.info("Writing: " + str(binascii.hexlify(data)))
-
-        chunk_size = MTU_SIZE - 3
-        for chunk in (
-            data[i : i + chunk_size] for i in range(0, len(data), chunk_size)
-        ):
-            await self.client.write_gatt_char(self.write_char, chunk, response=False)
-
-        logger.debug("Finished writing")
-
-    async def _read_data(self):
-        data = await self._get_response()
-
-        if data == None:
-            return None
-
-        if len(data) < 3:
-            # We got such a small amount of data, let's try again
-            data = data + await self._get_response()
-
-            if len(data) < 3:
-                # Something is wrong
-                return None
-
-        length = data[2] + 4
-
-        logger.debug("Waiting for %d bytes", length)
-
-        while len(data) != length:
-            try:
-                data = data + await asyncio.wait_for(self.queue.get(), timeout=5)
-            except TimeoutError:
-                logger.error(
-                    "Unable to get full response from device: '%s', currently have"
-                    + str(binascii.hexlify(data)),
-                    self.address,
-                )
-                return None
-
-        logger.info("Final response: " + str(binascii.hexlify(data)))
-
-        return data
-
-    async def _request_response(self, request_data):
-        i = 5
-        while i > 0:
-            try:
-                # If there are previous responses, flush them out
-                while not self.queue.empty():
-                    await self.queue.get()
-
-                await self._write_data(request_data)
-
-                response_data = await self._read_data()
-                if response_data == None:
-                    i = i - 1
-                    continue
-
-            except asyncio.exceptions.CancelledError:
-                logger.debug("Received CancelledError")
-                i = i - 1
-                continue
-
-            break
-
-        if i == 0:
-            logger.error("Unable to communicate with device: '%s'", self.address)
-            if self.is_connected():
-                await self.disconnect()
-            return None
-
-        return response_data
-
-    async def connect(self, device) -> bool:
+    async def set_parameter(self, parameter_name: str, **kwargs)->None:
         """
-        Connect to a device and setup the channel
-
-        Returns True on success
-        """
-        logger.info("starting scan...")
-
-        if device is None:
-            logger.error("could not find device with address '%s'", self.address)
-            return False
-
-        logger.info("connecting to device...")
-        self.client = BleakClient(
-            device, services=["98bd0001-0b0e-421a-84e5-ddbf75dc6de4"], use_cached=True
-        )
-        await self.client.connect()
-        logger.info("connected")
-
-        logger.info("pairing device...")
-        await self.client.pair()
-        logger.info("paired")
-
-        self.client._backend._mtu_size = MTU_SIZE
-
-        for service in self.client.services:
-            logger.info("[Service] %s", service)
-
-            for char in service.characteristics:
-                if "read" in char.properties:
-                    try:
-                        value = await self.client.read_gatt_char(char.uuid)
-                        logger.debug(
-                            "  [Characteristic] %s (%s), Value: %r",
-                            char,
-                            ",".join(char.properties),
-                            value,
-                        )
-                    except Exception as e:
-                        logger.error(
-                            "  [Characteristic] %s (%s), Error: %s",
-                            char,
-                            ",".join(char.properties),
-                            e,
-                        )
-
-                else:
-                    logger.debug(
-                        "  [Characteristic] %s (%s)", char, ",".join(char.properties)
-                    )
-                if char.uuid == "98bd0002-0b0e-421a-84e5-ddbf75dc6de4":
-                    self.write_char = char
-
-                if char.uuid == "98bd0003-0b0e-421a-84e5-ddbf75dc6de4":
-                    self.read_char = char
-
-        async def notification_handler(
-            characteristic: BleakGATTCharacteristic, data: bytearray
-        ):
-            logger.info("Received: " + str(binascii.hexlify(data)))
-            await self.queue.put(data)
-
-        await self.client.start_notify(self.read_char, notification_handler)
-
-        await asyncio.sleep(5.0)
-
-        request = generate_request_setup_channel_id(self.channel_id)
-        response = await self._request_response(request)
-        if response == None:
-            return False
-
-        ### TODO: Check response
-
-        request = generate_request_handshake(self.channel_id)
-        response = await self._request_response(request)
-        if response == None:
-            return False
-
-        ### TODO: Check response
-
-        return True
-
-    def is_connected(self) -> bool:
-        return self.client.is_connected
-
-    async def probe_gatts(self, device):
-        if device is None:
-            logger.error("could not find device with address '%s'", self.address)
-            return False
-
-        logger.info("connecting to device...")
-        client = BleakClient(
-            device, services=["98bd0001-0b0e-421a-84e5-ddbf75dc6de4"], use_cached=True
-        )
-
-        await client.connect()
-        logger.info("connected")
-
-        manufacture = None
-        model = None
-        device_type = None
-
-        for service in client.services:
-            logger.debug("[Service] %s", service)
-
-            if service.uuid == "98bd0001-0b0e-421a-84e5-ddbf75dc6de4":
-                manufacture = service.description
-
-            for char in service.characteristics:
-                if "read" in char.properties:
-                    try:
-                        value = await client.read_gatt_char(char.uuid)
-                        logger.debug(
-                            "  [Characteristic] %s (%s), Value: %r",
-                            char,
-                            ",".join(char.properties),
-                            value,
-                        )
-                    except Exception as e:
-                        logger.error(
-                            "  [Characteristic] %s (%s), Error: %s",
-                            char,
-                            ",".join(char.properties),
-                            e,
-                        )
-
-                else:
-                    logger.debug(
-                        "  [Characteristic] %s (%s)", char, ",".join(char.properties)
-                    )
-
-                if char.uuid == "00002a00-0000-1000-8000-00805f9b34fb":
-                    model = await client.read_gatt_char(char)
-
-                if char.uuid == "98bd0004-0b0e-421a-84e5-ddbf75dc6de4":
-                    device_type = await client.read_gatt_char(char)
-
-        await client.disconnect()
-
-        return (manufacture, device_type.decode(), model.decode())
-
-    async def get_model(self):
-        """
-        Get the mower model
-        """
-        request = self.request.generate_request_device_type()
-        response = await self._request_response(request)
-        if response == None:
-            return False
-
-        return self.response.decode_response_device_type(response)
-
-    async def is_charging(self):
-        request = self.request.generate_request_is_charging()
-        response = await self._request_response(request)
-        if response == None:
-            return False
-
-        return self.response.decode_response_is_charging(response)
+        This is the same function as get_parameter but with a differerent name to make syntax a bit more clear.
+        It also does not handle any response even though it upstream reads the response."""
+        self.get_parameter(parameter_name, **kwargs)
 
     async def get_parameter(self, parameter_name: str, **kwargs):
-        # request = self.request.generate_request_get_parameter(parameter)
+        """
+        This function is used to get a parameter from the mower. It will send a request to the mower and then
+        wait for a response. The response will be parsed and returned to the caller.
+        """
         command = Command(self.channel_id, self.protocol[parameter_name])
         request = command.generate_request(**kwargs)
         response = await self._request_response(request)
@@ -297,102 +45,71 @@ class Mower:
             return None
 
         response_dict = command.parse_response(response)
-        if len(response_dict) == 1:
+        if len(response_dict) == 1: # If there is only one key in the response, return the value
             return response_dict["response"]
         else:
             return response_dict
 
-    async def battery_level(self):
-        """
-        Query the mower battery level
-        """
-        request = self.request.generate_request_battery_level()
-        response = await self._request_response(request)
-        if response == None:
+    async def get_model(self)->str|None:
+        """Get the mower model"""
+        # Todo: Change behaviour to use enum
+        model = await self.get_parameter("deviceType")
+        if model is None:
+            return None
+        else:
+            return MowerModels[(model["deviceType"], model["deviceSubType"])]
+
+    async def is_charging(self)->bool:
+        if await mower.get_parameter("isCharging"):
+            return True
+        else:
             return False
 
-        return self.response.decode_response_battery_level(response)
+    async def battery_level(self)->int|None:
+        """Query the mower battery level"""
+        return await self.get_parameter("batteryLevel")
 
-    async def mower_state(self):
-        request = self.request.generate_request_mower_state()
-        response = await self._request_response(request)
-        if response == None:
-            return False
+    async def mower_state(self)->MowerState|None:
+        """Query the mower state"""
+        state = await self.get_parameter("mowerState")
+        if state is None:
+            return None
+        return MowerState(state)
 
-        return self.response.decode_response_mower_state(response)
+    async def mower_next_start_time(self)->datetime|None:
+        """Query the mower next start time"""
+        next_start_time = await self.get_parameter("nextStartTime")
+        if next_start_time is None or next_start_time == 0:
+            return None
+        return datetime.fromtimestamp(next_start_time, timezone.utc)
 
-    async def mower_next_start_time(self):
-        request = self.request.generate_request_next_start_time()
-        response = await self._request_response(request)
-        if response == None:
-            return False
-        return self.response.decode_response_start_time(response)
+    async def mower_activity(self)->MowerActivity|None:
+        """Query the mower activity"""
+        activity = await self.get_parameter("mowerActivity")
+        if activity is None:
+            return None
+        return MowerActivity(activity)
 
-    async def mower_activity(self):
-        request = self.request.generate_request_mower_activity()
-        response = await self._request_response(request)
-        if response == None:
-            return False
-
-        return self.response.decode_response_mower_activity(response)
-
-    async def mower_override(self):
+    async def mower_override(self, duration_hours: int = 3)->None:
         """
         Force the mower to run 3 hours
         """
-        request = self.request.generate_request_mode_of_operation("manual")
-        response = await self._request_response(request)
-        if response == None:
-            return False
+        # Set mode of operation to manual:
+        await self.set_parameter("modeOfOperation", mode=ModeOfOperation.MANUAL)
 
-        ### TODO: Check response
-
-        request = self.request.generate_request_override_duration("3hours")
-        response = await self._request_response(request)
-        if response == None:
-            return False
-
-        ### TODO: Check response
+        # Set the duration of operation:
+        await self.set_parameter("overrideDuration", duration=duration_hours*3600)
 
     async def mower_pause(self):
-        request = self.request.generate_request_pause()
-        response = await self._request_response(request)
-        if response == None:
-            return False
-
-        ### TODO: Check response
+        await self.set_parameter("pause")
 
     async def mower_resume(self):
-        request = self.request.generate_request_resume()
-        response = await self._request_response(request)
-        if response == None:
-            return False
-
-        ### TODO: Check response
+        await self.set_parameter("resume")
 
     async def mower_park(self):
-        request = self.request.generate_request_park()
-        response = await self._request_response(request)
-        if response == None:
-            return False
+        await self.set_parameter("park")
 
-        ### TODO: Check response
-
-    async def disconnect(self):
-        """
-        Disconnect from the mower, this should be called after every
-        `connect()` before the Python script exits
-        """
-
-        await self.client.stop_notify(self.read_char)
-        await self.queue.put(None)
-
-        logger.info("disconnecting...")
-        await self.client.disconnect()
-        logger.info("disconnected")
-
-
-async def main(mower):
+async def main(mower: Mower):
     device = await BleakScanner.find_device_by_address(mower.address)
 
     if device is None:
@@ -402,27 +119,27 @@ async def main(mower):
 
     await mower.connect(device)
 
-    model = await mower.get_parameter("deviceType")
-    print("Connected to: " + MowerModels[(model["deviceType"], model["deviceSubType"])])
+    model = await mower.get_model()
+    print("Connected to: " + model)
 
-    charging = await mower.get_parameter("isCharging")
+    charging = await mower.is_charging()
     if charging:
         print("Mower is charging")
     else:
         print("Mower is not charging")
 
-    battery_level = await mower.get_parameter("batteryLevel")
+    battery_level = await mower.battery_level()
     print("Battery is: " + str(battery_level) + "%")
 
-    state = await mower.get_parameter("mowerState")
+    state = await mower.mower_state()
     print("Mower state: " + str(state))
 
-    activity = await mower.get_parameter("mowerActivity")
+    activity = await mower.mower_activity()
     print("Mower activity: " + str(activity))
 
-    next_start_time = await mower.get_parameter("nextStartTime")
+    next_start_time = await mower.mower_next_start_time()
     if next_start_time:
-        print("Next start time: " + str(next_start_time))
+        print("Next start time: " + next_start_time.strftime("%Y-%m-%d %H:%M:%S"))
     else:
         print("No next start time")
 

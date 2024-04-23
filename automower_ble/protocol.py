@@ -1,6 +1,14 @@
 import binascii
 from .helpers import crc
 from enum import Enum
+import asyncio
+import logging
+import json
+from importlib.resources import files
+from bleak import BleakClient, BleakScanner
+from bleak.backends.characteristic import BleakGATTCharacteristic
+
+logger = logging.getLogger(__name__)
 
 class ModeOfOperation(Enum):
     # ProtocolTypes$IMowerAppMowerMode, used in modeOfOperation: 4586, 1
@@ -146,45 +154,295 @@ class Command:
 
         return response
 
+MTU_SIZE = 20
 
-def generate_request_setup_channel_id(channel_id: int) -> bytearray:
-    """
-    Setup the channelID with an Automower, this is the first
-    command that should be sent
-    """
-    data = bytearray.fromhex("02fd160000000000002e1400000000000000004d61696e00")
+class BLEClient:
+    def __init__(self, channel_id: int, address):
+        self.channel_id = channel_id
+        self.address = address
 
-    # New ChannelID
-    id = channel_id.to_bytes(4, byteorder="little")
-    data[11] = id[0]
-    data[12] = id[1]
-    data[13] = id[2]
-    data[14] = id[3]
+        self.queue = asyncio.Queue()
 
-    # CRC and end byte
-    data[9] = crc(data, 1, 8)
-    data.append(crc(data, 1, len(data) - 1))
-    data.append(0x03)
+        with files("automower_ble").joinpath("protocol.json").open("r") as f:
+            self.protocol = json.load(f) # Load the JSON file
 
-    return data
+    async def _get_response(self):
+        try:
+            data = await asyncio.wait_for(self.queue.get(), timeout=10)
 
+        except TimeoutError:
+            logger.error("Unable to get response from device: '%s'", self.address)
+            if self.is_connected():
+                await self.disconnect()
+            return None
 
-def generate_request_handshake(channel_id: int) -> bytearray:
-    """
-    Generate a request handshake. This should be called after
-    the channel id is set up but before other commands
-    """
-    data = bytearray.fromhex("02fd0a000000000000d00801")
+        return data
 
-    id = channel_id.to_bytes(4, byteorder="little")
-    data[4] = id[0]
-    data[5] = id[1]
-    data[6] = id[2]
-    data[7] = id[3]
+    async def _write_data(self, data):
+        logger.info("Writing: " + str(binascii.hexlify(data)))
 
-    # CRCs and end byte
-    data[9] = crc(data, 1, 8)
-    data.append(crc(data, 1, len(data) - 1))
-    data.append(0x03)
+        chunk_size = MTU_SIZE - 3
+        for chunk in (
+            data[i : i + chunk_size] for i in range(0, len(data), chunk_size)
+        ):
+            await self.client.write_gatt_char(self.write_char, chunk, response=False)
 
-    return data
+        logger.debug("Finished writing")
+
+    async def _read_data(self):
+        data = await self._get_response()
+
+        if data == None:
+            return None
+
+        if len(data) < 3:
+            # We got such a small amount of data, let's try again
+            data = data + await self._get_response()
+
+            if len(data) < 3:
+                # Something is wrong
+                return None
+
+        length = data[2] + 4
+
+        logger.debug("Waiting for %d bytes", length)
+
+        while len(data) != length:
+            try:
+                data = data + await asyncio.wait_for(self.queue.get(), timeout=5)
+            except TimeoutError:
+                logger.error(
+                    "Unable to get full response from device: '%s', currently have"
+                    + str(binascii.hexlify(data)),
+                    self.address,
+                )
+                return None
+
+        logger.info("Final response: " + str(binascii.hexlify(data)))
+
+        return data
+
+    async def _request_response(self, request_data):
+        i = 5
+        while i > 0:
+            try:
+                # If there are previous responses, flush them out
+                while not self.queue.empty():
+                    await self.queue.get()
+
+                await self._write_data(request_data)
+
+                response_data = await self._read_data()
+                if response_data == None:
+                    i = i - 1
+                    continue
+
+            except asyncio.exceptions.CancelledError:
+                logger.debug("Received CancelledError")
+                i = i - 1
+                continue
+
+            break
+
+        if i == 0:
+            logger.error("Unable to communicate with device: '%s'", self.address)
+            if self.is_connected():
+                await self.disconnect()
+            return None
+
+        return response_data
+
+    async def connect(self, device) -> bool:
+        """
+        Connect to a device and setup the channel
+
+        Returns True on success
+        """
+        logger.info("starting scan...")
+
+        if device is None:
+            logger.error("could not find device with address '%s'", self.address)
+            return False
+
+        logger.info("connecting to device...")
+        self.client = BleakClient(
+            device, services=["98bd0001-0b0e-421a-84e5-ddbf75dc6de4"], use_cached=True
+        )
+        await self.client.connect()
+        logger.info("connected")
+
+        logger.info("pairing device...")
+        await self.client.pair()
+        logger.info("paired")
+
+        self.client._backend._mtu_size = MTU_SIZE
+
+        for service in self.client.services:
+            logger.info("[Service] %s", service)
+
+            for char in service.characteristics:
+                if "read" in char.properties:
+                    try:
+                        value = await self.client.read_gatt_char(char.uuid)
+                        logger.debug(
+                            "  [Characteristic] %s (%s), Value: %r",
+                            char,
+                            ",".join(char.properties),
+                            value,
+                        )
+                    except Exception as e:
+                        logger.error(
+                            "  [Characteristic] %s (%s), Error: %s",
+                            char,
+                            ",".join(char.properties),
+                            e,
+                        )
+
+                else:
+                    logger.debug(
+                        "  [Characteristic] %s (%s)", char, ",".join(char.properties)
+                    )
+                if char.uuid == "98bd0002-0b0e-421a-84e5-ddbf75dc6de4":
+                    self.write_char = char
+
+                if char.uuid == "98bd0003-0b0e-421a-84e5-ddbf75dc6de4":
+                    self.read_char = char
+
+        async def notification_handler(
+            characteristic: BleakGATTCharacteristic, data: bytearray
+        ):
+            logger.info("Received: " + str(binascii.hexlify(data)))
+            await self.queue.put(data)
+
+        await self.client.start_notify(self.read_char, notification_handler)
+
+        await asyncio.sleep(5.0)
+
+        request = self.generate_request_setup_channel_id()
+        response = await self._request_response(request)
+        if response == None:
+            return False
+
+        ### TODO: Check response
+
+        request = self.generate_request_handshake()
+        response = await self._request_response(request)
+        if response == None:
+            return False
+
+        ### TODO: Check response
+
+        return True
+
+    def is_connected(self) -> bool:
+        return self.client.is_connected
+
+    async def probe_gatts(self, device):
+        if device is None:
+            logger.error("could not find device with address '%s'", self.address)
+            return False
+
+        logger.info("connecting to device...")
+        client = BleakClient(
+            device, services=["98bd0001-0b0e-421a-84e5-ddbf75dc6de4"], use_cached=True
+        )
+
+        await client.connect()
+        logger.info("connected")
+
+        manufacture = None
+        model = None
+        device_type = None
+
+        for service in client.services:
+            logger.debug("[Service] %s", service)
+
+            if service.uuid == "98bd0001-0b0e-421a-84e5-ddbf75dc6de4":
+                manufacture = service.description
+
+            for char in service.characteristics:
+                if "read" in char.properties:
+                    try:
+                        value = await client.read_gatt_char(char.uuid)
+                        logger.debug(
+                            "  [Characteristic] %s (%s), Value: %r",
+                            char,
+                            ",".join(char.properties),
+                            value,
+                        )
+                    except Exception as e:
+                        logger.error(
+                            "  [Characteristic] %s (%s), Error: %s",
+                            char,
+                            ",".join(char.properties),
+                            e,
+                        )
+
+                else:
+                    logger.debug(
+                        "  [Characteristic] %s (%s)", char, ",".join(char.properties)
+                    )
+
+                if char.uuid == "00002a00-0000-1000-8000-00805f9b34fb":
+                    model = await client.read_gatt_char(char)
+
+                if char.uuid == "98bd0004-0b0e-421a-84e5-ddbf75dc6de4":
+                    device_type = await client.read_gatt_char(char)
+
+        await client.disconnect()
+
+        return (manufacture, device_type.decode(), model.decode())
+
+    async def disconnect(self):
+        """
+        Disconnect from the mower, this should be called after every
+        `connect()` before the Python script exits
+        """
+
+        await self.client.stop_notify(self.read_char)
+        await self.queue.put(None)
+
+        logger.info("disconnecting...")
+        await self.client.disconnect()
+        logger.info("disconnected")
+
+    def generate_request_setup_channel_id(self) -> bytearray:
+        """
+        Setup the channelID with an Automower, this is the first
+        command that should be sent
+        """
+        data = bytearray.fromhex("02fd160000000000002e1400000000000000004d61696e00")
+
+        # New ChannelID
+        id = self.channel_id.to_bytes(4, byteorder="little")
+        data[11] = id[0]
+        data[12] = id[1]
+        data[13] = id[2]
+        data[14] = id[3]
+
+        # CRC and end byte
+        data[9] = crc(data, 1, 8)
+        data.append(crc(data, 1, len(data) - 1))
+        data.append(0x03)
+
+        return data
+
+    def generate_request_handshake(self) -> bytearray:
+        """
+        Generate a request handshake. This should be called after
+        the channel id is set up but before other commands
+        """
+        data = bytearray.fromhex("02fd0a000000000000d00801")
+
+        id = self.channel_id.to_bytes(4, byteorder="little")
+        data[4] = id[0]
+        data[5] = id[1]
+        data[6] = id[2]
+        data[7] = id[3]
+
+        # CRCs and end byte
+        data[9] = crc(data, 1, 8)
+        data.append(crc(data, 1, len(data) - 1))
+        data.append(0x03)
+
+        return data
