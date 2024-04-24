@@ -19,9 +19,6 @@ from bleak import BleakScanner
 
 logger = logging.getLogger(__name__)
 
-MTU_SIZE = 20
-
-
 class Mower(BLEClient):
     def __init__(self, channel_id: int, address):
         super().__init__(channel_id, address)
@@ -43,6 +40,10 @@ class Mower(BLEClient):
         if response == None:
             return None
 
+        if command.validate_response(response) == False:
+            logger.error("Response failed validation")
+            return None
+        
         response_dict = command.parse_response(response)
         if len(response_dict) == 1: # If there is only one key in the response, return the value
             return response_dict["response"]

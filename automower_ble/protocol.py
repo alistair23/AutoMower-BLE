@@ -5,7 +5,7 @@ import asyncio
 import logging
 import json
 from importlib.resources import files
-from bleak import BleakClient, BleakScanner
+from bleak import BleakClient
 from bleak.backends.characteristic import BleakGATTCharacteristic
 
 logger = logging.getLogger(__name__)
@@ -130,7 +130,6 @@ class Command:
         return self.request_data
 
     def parse_response(self, response_data: bytearray) -> int | None:
-        # Skip validation for bytes 0-16 for now
         response_length = response_data[17]
         data = response_data[19:19 + response_length]
         response = dict()
@@ -154,12 +153,61 @@ class Command:
 
         return response
 
-MTU_SIZE = 20
+    def validate_response(self, response_data: bytearray) -> bool:
+        if response_data[0] != 0x02:
+            return False
+
+        if response_data[1] != 0xFD:
+            return False
+
+        if response_data[3] != 0x00:
+            return False
+
+        id = self.channel_id.to_bytes(4, byteorder="little")
+        if response_data[4] != id[0]:
+            return False
+        if response_data[5] != id[1]:
+            return False
+        if response_data[6] != id[2]:
+            return False
+        if response_data[7] != id[3]:
+            return False
+
+        if response_data[8] != 0x01:
+            # This is a valid config, but we don't support it
+            # return m1656b(decodeState, c10786f);
+            return False
+
+        if response_data[9] != crc(response_data, 1, 8):
+            return False
+
+        if response_data[10] != 0x01:
+            return False
+
+        if response_data[11] != 0xAF:
+            return False
+
+        major_bytes = self.major.to_bytes(4, byteorder="little")
+        if response_data[12] != major_bytes[0]:
+            return False
+        if response_data[13] != major_bytes[1]:
+            return False
+        if response_data[14] != self.minor:
+            return False
+
+        if response_data[15] != 0x00:
+            return False
+
+        if response_data[16] != 0x00:
+            return False
+
+        return True
 
 class BLEClient:
     def __init__(self, channel_id: int, address):
         self.channel_id = channel_id
         self.address = address
+        self.MTU_SIZE = 20
 
         self.queue = asyncio.Queue()
 
@@ -181,7 +229,7 @@ class BLEClient:
     async def _write_data(self, data):
         logger.info("Writing: " + str(binascii.hexlify(data)))
 
-        chunk_size = MTU_SIZE - 3
+        chunk_size = self.MTU_SIZE - 3
         for chunk in (
             data[i : i + chunk_size] for i in range(0, len(data), chunk_size)
         ):
@@ -275,7 +323,7 @@ class BLEClient:
         await self.client.pair()
         logger.info("paired")
 
-        self.client._backend._mtu_size = MTU_SIZE
+        self.client._backend._mtu_size = self.MTU_SIZE
 
         for service in self.client.services:
             logger.info("[Service] %s", service)
