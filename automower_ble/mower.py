@@ -25,9 +25,10 @@ MTU_SIZE = 20
 
 
 class Mower:
-    def __init__(self, channel_id: int, address):
+    def __init__(self, channel_id: int, address, pin=None):
         self.channel_id = channel_id
         self.address = address
+        self.pin = pin
 
         self.request = MowerRequest(channel_id)
         self.response = MowerResponse(channel_id)
@@ -199,6 +200,14 @@ class Mower:
             return False
 
         ### TODO: Check response
+
+        if self.pin is not None:
+            request = self.request.generate_request_pin(self.pin)
+            response = await self._request_response(request)
+            if response == None:
+                return False
+
+            ### TODO: Check response
 
         return True
 
@@ -434,9 +443,16 @@ if __name__ == "__main__":
         help="the Bluetooth address of the Automower device to connect to",
     )
 
+    parser.add_argument(
+        "--pin",
+        metavar="<code>",
+        type=int,
+        default=None,
+        help="Send PIN to authenticate. This feature is experimental and might not work.",
+    )
     args = parser.parse_args()
 
-    mower = Mower(1197489078, args.address)
+    mower = Mower(1197489078, args.address, args.pin)
 
     log_level = logging.INFO
     logging.basicConfig(
