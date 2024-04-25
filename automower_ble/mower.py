@@ -119,7 +119,11 @@ async def main(mower: Mower):
 
     await mower.connect(device)
 
-    model = await mower.get_model()
+    try: 
+        model = await mower.get_model()
+    except KeyError:
+        model = "Untested"
+
     print("Connected to: " + model)
 
     charging = await mower.is_charging()
@@ -183,9 +187,16 @@ if __name__ == "__main__":
         help="the Bluetooth address of the Automower device to connect to",
     )
 
+    parser.add_argument(
+        "--pin",
+        metavar="<code>",
+        type=int,
+        default=None,
+        help="Send PIN to authenticate. This feature is experimental and might not work.",
+    )
     args = parser.parse_args()
 
-    mower = Mower(1197489078, args.address)
+    mower = Mower(1197489078, args.address, args.pin)
 
     log_level = logging.INFO
     logging.basicConfig(
