@@ -389,7 +389,11 @@ async def main(mower):
 
     await mower.connect(device)
 
-    model = await mower.get_model()
+    try: 
+        model = await mower.get_model()
+    except KeyError:
+        model = "Untested"
+
     print("Connected to: " + model)
 
     charging = await mower.is_charging()
