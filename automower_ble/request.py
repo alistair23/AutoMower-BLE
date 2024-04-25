@@ -475,7 +475,7 @@ class TestStringMethods(unittest.TestCase):
 
         self.assertEqual(
             binascii.hexlify(request.generate_request_mode_of_operation("manual")),
-            b"02fd11001aca9857013400afea1100000100003303",
+            b"02fd11001aca9857013400afea110100010000fe03",
         )
 
     def test_generate_request_override_duration(self):
