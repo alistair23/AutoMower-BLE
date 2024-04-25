@@ -70,14 +70,13 @@ class TestRequestMethods(unittest.TestCase):
             b"02fd1000b33b6047017300af0a1014000000bf03",
         )
 
-    # This unit test fails as (4586, 0) with data "0" is expected, this is not implemented.
-    # def test_generate_request_mode_of_operation(self):
-    #    command = Command(0x5798CA1A, parameter=self.protocol["modeOfOperation"])
-    #
-    #    self.assertEqual(
-    #        binascii.hexlify(command.generate_request(mode=1)), #1=manual, Todo: convert to enum
-    #        b"02fd11001aca9857013400afea1100000100003303",
-    #    )
+    def test_generate_request_mode_of_operation(self):
+        command = Command(0x5798CA1A, parameter=self.protocol["modeOfOperation"])
+    
+        self.assertEqual(
+            binascii.hexlify(command.generate_request(mode=ModeOfOperation.AUTO.value)),
+            b"02fd11001aca9857013400afea110100010000fe03",
+        )
 
     def test_generate_request_override_duration(self):
         command = Command(0x5798CA1A, parameter=self.protocol["overrideDuration"])

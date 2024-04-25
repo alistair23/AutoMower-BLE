@@ -20,8 +20,8 @@ from bleak import BleakScanner
 logger = logging.getLogger(__name__)
 
 class Mower(BLEClient):
-    def __init__(self, channel_id: int, address):
-        super().__init__(channel_id, address)
+    def __init__(self, channel_id: int, address, pin=None):
+        super().__init__(channel_id, address, pin)
 
     async def set_parameter(self, parameter_name: str, **kwargs)->None:
         """

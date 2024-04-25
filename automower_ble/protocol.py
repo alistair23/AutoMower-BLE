@@ -204,9 +204,10 @@ class Command:
         return True
 
 class BLEClient:
-    def __init__(self, channel_id: int, address):
+    def __init__(self, channel_id: int, address, pin=None):
         self.channel_id = channel_id
         self.address = address
+        self.pin = pin
         self.MTU_SIZE = 20
 
         self.queue = asyncio.Queue()
@@ -379,6 +380,13 @@ class BLEClient:
             return False
 
         ### TODO: Check response
+        
+        if self.pin is not None:
+            command = Command(self.channel_id, self.protocol["pin"])
+            request = command.generate_request(code=self.pin)
+            response = await self._request_response(request)
+            if response == None:
+                return False
 
         return True
 
