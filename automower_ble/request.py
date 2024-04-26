@@ -7,7 +7,7 @@
 import unittest
 import binascii
 
-from helpers import crc
+from .helpers import crc
 
 import logging
 

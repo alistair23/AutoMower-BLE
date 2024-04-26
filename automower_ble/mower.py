@@ -13,8 +13,8 @@ from datetime import datetime, timezone
 
 import binascii
 
-from request import *
-from response import MowerResponse
+from .request import *
+from .response import MowerResponse
 
 from bleak import BleakClient, BleakScanner
 from bleak.backends.characteristic import BleakGATTCharacteristic
