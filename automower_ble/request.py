@@ -7,7 +7,7 @@
 import unittest
 import binascii
 
-from .helpers import crc
+from helpers import crc
 
 Requests = dict(
     [
@@ -25,6 +25,15 @@ Requests = dict(
         ("overrideDuration", ((4658, 3), (0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00))),
         ("park", ((4658, 5), (0x00, 0x00, 0x00))),
         ("nextStartTime", ((4658, 1), (0x00, 0x00, 0x00))),
+        ("override", ((4658, 2), (0x00, 0x00, 0x00))),
+        ("request_trigger", ((4586, 4),(0x00, 0x00, 0x00))),
+        ("keepalive", ((4674, 2), (0x00, 0x00, 0x00))),
+        ("getStartupSequenceRequiredRequest", ((4698, 2), (0x00, 0x00, 0x00))),
+        ("is_operator_loggedin", ((4664, 3), (0x00, 0x00, 0x00))),
+        ("get_mode_request", ((4586, 1), (0x00, 0x00, 0x00))),
+        ("get_serial_number", ((4698, 10), (0x00, 0x00, 0x00))),
+        ("get_restriction_reason", ((4658, 0), (0x00, 0x00, 0x00))),
+        ("get_number_of_tasks", ((4690, 4), (0x00, 0x00, 0x00))),
     ]
 )
 
@@ -48,6 +57,7 @@ class MowerRequest:
         # Hard coded value
         data.append(0x00)
 
+        # print(f'using channelid : {hex(self.channel_id)}')
         # ChannelID
         id = self.channel_id.to_bytes(4, byteorder="little")
         data.append(id[0])
@@ -222,6 +232,18 @@ class MowerRequest:
     def generate_request_park(self) -> bytearray:
         data = self.__generate_standard_request("park")
         return self.__finalise_standard_request(data)
+    
+    def generate_request_trigger_request(self) -> bytearray:
+        data = self.__generate_standard_request("request_trigger")
+        return self.__finalise_standard_request(data)
+    
+    def generate_keepalive_request(self) -> bytearray:
+        data = self.__generate_standard_request("keepalive")
+        return self.__finalise_standard_request(data)
+    
+    def generate_request_override(self) -> bytearray:
+        data = self.__generate_standard_request("override")
+        return self.__finalise_standard_request(data)    
 
     def generate_request_mower_state(self) -> bytearray:
         data = self.__generate_standard_request("mowerState")
@@ -283,6 +305,29 @@ class MowerRequest:
 
         return self.__finalise_standard_request(data)
 
+    def generate_getStartupSequenceRequiredRequest(self) -> bytearray:
+        data = self.__generate_standard_request('getStartupSequenceRequiredRequest')
+        return self.__finalise_standard_request(data)
+    
+    def generate_is_operator_loggedin_request(self) -> bytearray:
+        data = self.__generate_standard_request("is_operator_loggedin" )
+        return self.__finalise_standard_request(data)
+    
+    def generate_get_mode_request(self) -> bytearray:
+        data = self.__generate_standard_request("get_mode_request")
+        return self.__finalise_standard_request(data)
+    
+    def generate_get_serial_number(self) -> bytearray:
+        data = self.__generate_standard_request("get_serial_number")
+        return self.__finalise_standard_request(data)
+    
+    def generate_get_restriction_reason(self) -> bytearray:
+        data = self.__generate_standard_request("get_restriction_reason")
+        return self.__finalise_standard_request(data)
+    
+    def generate_get_number_of_tasks(self) -> bytearray:
+        data = self.__generate_standard_request("get_number_of_tasks")
+        return self.__finalise_standard_request(data)
 
 class TestStringMethods(unittest.TestCase):
     def test_generate_request_setup_channel_id(self):
@@ -487,5 +532,12 @@ class TestStringMethods(unittest.TestCase):
         )
 
 
+    def test_generate_request_park(self):
+        request = MowerRequest(0x47603bb6)
+        
+        self.assertEqual(
+            binascii.hexlify(request.generate_request_park()),
+            b"02fd1000a84f571201f500af321205000000c703"
+        )
 if __name__ == "__main__":
     unittest.main()

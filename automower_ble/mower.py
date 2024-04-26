@@ -8,18 +8,19 @@
 
 import argparse
 import asyncio
-import logging
+import logging, coloredlogs
 from datetime import datetime, timezone
 
 import binascii
 
-from .request import *
-from .response import MowerResponse
+from request import *
+from response import MowerResponse
 
 from bleak import BleakClient, BleakScanner
 from bleak.backends.characteristic import BleakGATTCharacteristic
 
 logger = logging.getLogger(__name__)
+coloredlogs.install(level='DEBUG', logger=logger)
 
 MTU_SIZE = 20
 
@@ -48,7 +49,7 @@ class Mower:
         return data
 
     async def _write_data(self, data):
-        logger.info("Writing: " + str(binascii.hexlify(data)))
+        logger.debug("Writing: " + str(binascii.hexlify(data)))
 
         chunk_size = MTU_SIZE - 3
         for chunk in (
@@ -87,7 +88,7 @@ class Mower:
                 )
                 return None
 
-        logger.info("Final response: " + str(binascii.hexlify(data)))
+        logger.warn("Final response: " + str(binascii.hexlify(data)))
 
         return data
 
@@ -127,25 +128,27 @@ class Mower:
 
         Returns True on success
         """
-        logger.info("starting scan...")
+        logger.info("[connect] starting scan...")
 
         if device is None:
-            logger.error("could not find device with address '%s'", self.address)
+            logger.error("[connect] could not find device with address '%s'", self.address)
             return False
 
-        logger.info("connecting to device...")
+        logger.info("[connect] connecting to device...")
         self.client = BleakClient(
-            device, services=["98bd0001-0b0e-421a-84e5-ddbf75dc6de4"], use_cached=True
+            device, services=["98bd0001-0b0e-421a-84e5-ddbf75dc6de4"], use_cached=True,
+            timeout=15.0
         )
         await self.client.connect()
-        logger.info("connected")
+        logger.info("[connect] connected")
 
-        logger.info("pairing device...")
+        logger.info("[connect] pairing device...")
         await self.client.pair()
-        logger.info("paired")
+        logger.info("[connect] paired")
 
         self.client._backend._mtu_size = MTU_SIZE
 
+        logger.info(f'Retrieving services from device')
         for service in self.client.services:
             logger.info("[Service] %s", service)
 
@@ -180,35 +183,42 @@ class Mower:
         async def notification_handler(
             characteristic: BleakGATTCharacteristic, data: bytearray
         ):
-            logger.info("Received: " + str(binascii.hexlify(data)))
+            logger.critical("[notification_handler] Received: " + str(binascii.hexlify(data)))
             await self.queue.put(data)
 
         await self.client.start_notify(self.read_char, notification_handler)
 
         await asyncio.sleep(5.0)
 
+        logger.info(f'[connect] start requesting setup channel id')
         request = self.request.generate_request_setup_channel_id()
         response = await self._request_response(request)
+        #logger.info(f'[connect] Got response from setup channel id : {response}')
         if response == None:
             return False
 
         ### TODO: Check response
 
+        logger.info(f'[connect] start request handshake')
         request = self.request.generate_request_handshake()
         response = await self._request_response(request)
+        #logger.info(f'[connect] got response {response}')
         if response == None:
             return False
 
         ### TODO: Check response
 
+
         if self.pin is not None:
+            logger.info(f'[connect] pin is not None ([{self.pin}]). So start generating pin request')
             request = self.request.generate_request_pin(self.pin)
             response = await self._request_response(request)
+            logger.info(f'[connect] got pin response {response}')
             if response == None:
                 return False
 
             ### TODO: Check response
-
+        logger.info(f'[Mower:connect] Finished connecting return true')
         return True
 
     def is_connected(self) -> bool:
@@ -360,10 +370,69 @@ class Mower:
     async def mower_park(self):
         request = self.request.generate_request_park()
         response = await self._request_response(request)
+        print(f'Response on park request : {response}')
         if response == None:
             return False
+        
 
+        x = self.response.decode_response_park(response)
+        print(f'x == {x}')
+        if x == 1:
+            return True
+        return False
         ### TODO: Check response
+    async def start_trigger_request(self):
+        request = self.request.generate_request_trigger_request()
+        response = await self._request_response(request)
+        print(f'Response on start_trigger_request {response}')
+        if response == None:
+            return False
+        return True
+    
+    async def send_keepalive(self) -> bool:
+        request = self.request.generate_keepalive_request()
+        response = await self._request_response(request)
+        return self.response.decode_keepalive_response(response)
+        
+    async def generate_request_override(self):
+        request = self.request.generate_request_override()
+        response = await self._request_response(request)
+        print(f'Response on generate_request_override {response}')
+        if response == None:
+            return False
+        return True
+    
+    async def getStartupSequenceRequiredRequest(self)-> bool:
+        request = self.request.generate_getStartupSequenceRequiredRequest()
+        response = await self._request_response(request)
+        return self.response.decode_getStartupSequenceRequiredResponse(response)
+    
+    async def is_operator_loggedin(self) -> bool:
+        request = self.request.generate_is_operator_loggedin_request()
+        response = await self._request_response(request)
+        return self.response.decode_is_operator_loggedin_response(response)
+    
+    async def get_mode(self): 
+        request = self.request.generate_get_mode_request()
+        response = await self._request_response(request)
+        return self.response.decode_get_mode_response(response)
+    
+    async def get_serial_number(self):
+        request = self.request.generate_get_serial_number()
+        response = await self._request_response(request)
+        return self.response.decode_get_serial_number_response(response)
+    
+    async def get_restriction_reason(self):
+        request = self.request.generate_get_restriction_reason()
+        response = await self._request_response(request)
+        return self.response.decode_get_restriction_reason_response(response)
+    
+    async def get_number_of_tasks(self):
+        request = self.request.generate_get_number_of_tasks()
+        response = await self._request_response(request)
+        return self.response.decode_get_number_of_tasks_response(response)
+    
+    
 
     async def disconnect(self):
         """
@@ -418,20 +487,34 @@ async def main(mower):
     else:
         print("No next start time")
 
-    # print("Running for 3 hours")
-    # await mower.mower_override()
-
+    print("Running for 3 hours")
+    await mower.mower_override()
+    print ("starting trigger request")
+    await mower.start_trigger_request()
+    print('Finished trigger request')
+    await mower.generate_request_override()
+    print('Finished override request')
     # print("Pause")
     # await mower.mower_pause()
 
     # print("Resume")
     # await mower.mower_resume()
 
-    # state = await mower.mower_state()
-    # print("Mower state: " + state)
+    # print('Parking mower')
+    # park_result = await mower.mower_park()
+    # print(f'Finished parking mower request => {park_result}')
+    
+    # print('Start trigger request')
+    # await mower.start_trigger_request()
+    # print('---------------')
 
-    # activity = await mower.mower_activity()
-    # print("Mower activity: " + activity)
+    print('Start get mower state request')
+    state = await mower.mower_state()
+    print("Mower state: " + state)
+
+    print('Start get mower activity request')
+    activity = await mower.mower_activity()
+    print("Mower activity: " + activity)
 
     await mower.disconnect()
 
