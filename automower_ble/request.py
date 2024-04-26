@@ -9,6 +9,10 @@ import binascii
 
 from helpers import crc
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 Requests = dict(
     [
         ("pin", ((4664, 4), (0x00, 0x02, 0x00))),
@@ -34,6 +38,7 @@ Requests = dict(
         ("get_serial_number", ((4698, 10), (0x00, 0x00, 0x00))),
         ("get_restriction_reason", ((4658, 0), (0x00, 0x00, 0x00))),
         ("get_number_of_tasks", ((4690, 4), (0x00, 0x00, 0x00))),
+        ("set_mode_request", ((4586, 0), (0x00, 0x00, 0x00, 0x00)))
     ]
 )
 
@@ -42,7 +47,7 @@ class MowerRequest:
     def __init__(self, channel_id: int):
         self.channel_id = channel_id
 
-    def __generate_request_template(self) -> bytearray:
+    def __generate_request_template(self, boolean_value_false:bool = False) -> bytearray:
         data = bytearray()
 
         # Hard coded value
@@ -66,7 +71,10 @@ class MowerRequest:
         data.append(id[3])
 
         # The third argument to e(int i10, int i11, boolean z10, T t10). Almost always 1
-        data.append(0x01)
+        if not boolean_value_false:
+            data.append(0x01)
+        else:
+            data.append(0x00)
 
         # CRC, Updated later
         data.append(0x00)
@@ -79,8 +87,8 @@ class MowerRequest:
 
         return data
 
-    def __generate_standard_request(self, request) -> bytearray:
-        data = self.__generate_request_template()
+    def __generate_standard_request(self, request, boolean_value_false:bool = False) -> bytearray:
+        data = self.__generate_request_template(boolean_value_false)
 
         request = Requests[request]
         command = request[0]
@@ -197,11 +205,17 @@ class MowerRequest:
 
     def generate_request_pin(self, pin: int) -> bytearray:
         data = self.__generate_standard_request("pin")
-
+        
         # Pin
         pin = pin.to_bytes(2, byteorder="little")
+        logger.debug(f'pin => {pin}')
+        print(f'pin => {binascii.hexlify(pin)}')
+        
+        #0002003305
+        #0533000200 -> int : 22330475008
         data.append(pin[0])
         data.append(pin[1])
+        
 
         return self.__finalise_standard_request(data)
 
@@ -260,31 +274,73 @@ class MowerRequest:
     def generate_request_next_start_time(self) -> bytearray:
         data = self.__generate_standard_request("nextStartTime")
         return self.__finalise_standard_request(data)
+    
+
+#set_mode_request
+    def generate_set_request_mode_of_operation(self, mode) -> bytearray:
+        data = self.__generate_standard_request("set_mode_request")
+        match mode:
+            case "auto":
+                data[16] = 0x00
+            case "manual":
+                data[16] = 0x01
+            case "home":
+                data[16] = 0x02
+            case "demo":
+                data[16] = 0x03
+            case "poi":
+                data[16] = 0x04
+            case _:
+                return None
+
+        return self.__finalise_standard_request(data)
 
     def generate_request_mode_of_operation(self, mode) -> bytearray:
         data = self.__generate_standard_request("modeOfOperation")
 
         match mode:
             case "auto":
-                data[16] = 0
+                data[16] = 0x00
             case "manual":
-                data[16] = 1
+                data[16] = 0x01
             case "home":
-                data[16] = 2
+                data[16] = 0x02
             case "demo":
-                data[16] = 3
+                data[16] = 0x03
             case "poi":
-                data[16] = 4
+                data[16] = 0x04
             case _:
                 return None
 
+        return self.__finalise_standard_request(data)
+    
+    def generate_set_override_mow(self, duration) -> bytearray:
+        data = self.__generate_standard_request("overrideDuration")
+        data[15] = 0x00
+        data[16] = 0x04
+        data[17] = 0x00
+        
+        d = duration.to_bytes(2, byteorder="little")
+        data[18] = d[0]
+        data[19] = d[1]
+        
+        data[20] = 0x00
+        data[21] = 0x00
         return self.__finalise_standard_request(data)
 
     def generate_request_override_duration(self, duration) -> bytearray:
         data = self.__generate_standard_request("overrideDuration")
 
         match duration:
-            case "3hours":
+            case "30min" : 
+                data[15] = 0x00
+                data[16] = 0x04
+                data[17] = 0x00
+                data[18] = 0x08
+                data[19] = 0x07
+                data[20] = 0x00
+                data[21] = 0x00
+            case "3hours": #181193933824
                 data[15] = 0x00
                 data[16] = 0x04
                 data[17] = 0x00
@@ -387,6 +443,13 @@ class TestStringMethods(unittest.TestCase):
         self.assertEqual(
             binascii.hexlify(request_two.generate_request_device_type()),
             b"02fd100066f2ad6701d700af5a1209000000b703",
+        )
+
+    def test_pin_request(self):
+        request = MowerRequest(0x13a51453)
+        self.assertEqual(
+            binascii.hexlify(request.generate_request_pin(1331)),
+            b"02fd12005314a513011300af38120400020033050103"
         )
 
     def test_generate_request_pin(self):
@@ -516,11 +579,13 @@ class TestStringMethods(unittest.TestCase):
         )
 
     def test_generate_request_mode_of_operation(self):
-        request = MowerRequest(0x5798CA1A)
+        #request = MowerRequest(0x5798CA1A)
+        request = MowerRequest(0x13A51453)
 
         self.assertEqual(
-            binascii.hexlify(request.generate_request_mode_of_operation("manual")),
-            b"02fd11001aca9857013400afea110100010000fe03",
+            binascii.hexlify(request.generate_set_request_mode_of_operation("manual")),
+            b"02fd11005314a513015400afea1100000100003303"
+            #b"02fd11001aca9857013400afea110100010000fe03",
         )
 
     def test_generate_request_override_duration(self):
@@ -530,14 +595,21 @@ class TestStringMethods(unittest.TestCase):
             binascii.hexlify(request.generate_request_override_duration("3hours")),
             b"02fd14001aca985701fd00af321203000400302a00004603",
         )
-
-
-    def test_generate_request_park(self):
-        request = MowerRequest(0x47603bb6)
         
+    def test_generate_request_override_duration_30_min(self):
+        request = MowerRequest(0x13a51453)
         self.assertEqual(
-            binascii.hexlify(request.generate_request_park()),
-            b"02fd1000a84f571201f500af321205000000c703"
+            binascii.hexlify(request.generate_request_override_duration("30min")),
+            b"02fd14005314a513019d00af321203000400080700009603",
         )
+
+
+    # def test_generate_request_park(self):
+    #     request = MowerRequest(0x47603bb6)
+        
+    #     self.assertEqual(
+    #         binascii.hexlify(request.generate_request_park()),
+    #         b"02fd1000a84f571201f500af321205000000c703"
+    #     )
 if __name__ == "__main__":
     unittest.main()

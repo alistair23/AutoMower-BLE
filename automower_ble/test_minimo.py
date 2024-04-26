@@ -40,6 +40,10 @@ async def main(mower:Mower):
     if not keepalive_response:
         logger.error(f'Error sending keepalive request {keepalive_response}')
 
+    enterOperatorPinRequestResult = await mower.send_operator_pin_request(1331)
+    logger.debug(f'Enter Operator Pin Request Result {enterOperatorPinRequestResult}')
+
+
     success = await mower.getStartupSequenceRequiredRequest()
     logger.debug(f'Startupsequence is required response {success}')
     
@@ -68,8 +72,55 @@ async def main(mower:Mower):
     number_of_tasks = await mower.get_number_of_tasks()
     logger.debug(f'number of tasks : {number_of_tasks}')
     
+    # TODO: implement get task functioality
+    # for now : don't know how to parse "task number"
+    # task_response = await mower.get_task(task_number)
+    
+    keepalive_response = await mower.send_keepalive()
+    
+    mower_state = await mower.mower_state()
+    logger.debug(f'Mower state response {mower_state}')
+    
+    mower_activity = await mower.mower_activity()
+    logger.debug(f'Mower activity : {mower_activity}')
+    
+    get_mode_response = await mower.get_mode()
+    logger.debug(f'Mode : {get_mode_response}')
+    
+    next_start_time = await mower.mower_next_start_time()
+    logger.debug(f'Next Start Time : {next_start_time}')
+    if next_start_time:
+        dt_start_time = datetime.fromtimestamp(next_start_time, tz=timezone.utc) # The mower does not have a timezone and therefore utc must be used for parsing
+        logger.debug("Next start time: " + dt_start_time.strftime("%Y-%m-%d %H:%M:%S"))
+    else:
+        logger.debug("No next start time")
+        
+    restriction_reason = await mower.get_restriction_reason()
+    logger.debug(f'Restriction reason : {restriction_reason}')
+    
+    logger.debug('--------------')
+    logger.debug('start setting mode to manual')
+    await mower.set_mode_of_operation("manual")
+    logger.debug('Mode of operation set to manual')
+    logger.debug('--------------')
     
     
+    logger.debug(f'Overriding mow to 30 mins')
+    override_mow_response = await mower.set_override_mow(30) # 30 minutes override mow
+    logger.debug(f'override mow response : {override_mow_response}')
+    logger.debug('--------------')
+
+    
+    start_trigger = await mower.start_trigger_request()
+    logger.debug(f'Start trigger response : {start_trigger}')
+    
+    keepalive_response = await mower.send_keepalive()
+    
+    mower_state = await mower.mower_state()
+    logger.debug(f'Mower state response {mower_state}')
+    
+    mower_activity = await mower.mower_activity()
+    logger.debug(f'Mower activity : {mower_activity}')
     
     logger.info('Finished testing mower')
     
@@ -92,7 +143,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    mower = Mower(1197489078, args.address)
+    #mower = Mower(1197489078, args.address)
+    mower = Mower(0x13a51453, args.address)
 
     # log_level = logging.INFO
     # logging.basicConfig(

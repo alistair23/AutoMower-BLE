@@ -262,34 +262,42 @@ class MowerResponse:
         state = data[19]
 
         match state:
+            case 0:
+                return "off"
             case 1:
-                return "paused"
+                return "waitForSafetyPin"
+                # return "paused"
             case 2:
                 return "stopped"
             case 3:
-                return "error"
-            case 4:
                 return "fatalError"
-            case 5:
-                return "off"
-            case 6:
-                return "checkSafety"
-            case 7:
+            case 4:
                 return "pendingStart"
-            case 8:
-                return "waitForSafetyPin"
-            case 9:
-                return "restricted"
-            case 10:
+                # return "fatalError"
+            case 5:
+                return "paused"
+                # return "off"
+            case 6:
                 return "inOperation"
-            case 11:
-                return "unknown"
-            case 12:
-                return "connecting"
-            case 13:
-                return "pending"
-            case 14:
-                return "disconnected"
+                # return "checkSafety"
+            case 7:
+                return "restricted"
+                # return "pendingStart"
+            case 8:
+                return "error"
+                # return "waitForSafetyPin"
+            # case 9:
+            #     return "restricted"
+            # case 10:
+            #     return "inOperation"
+            # case 11:
+            #     return "unknown"
+            # case 12:
+            #     return "connecting"
+            # case 13:
+            #     return "pending"
+            # case 14:
+            #     return "disconnected"
             case _:
                 return "unknown"
 
@@ -348,6 +356,9 @@ class MowerResponse:
         vale = int.from_bytes(data[19:23], byteorder='little', signed=False)
         return vale
     
+    def decode_set_override_mow_response(self, data: bytearray):
+        self.decode_response_template(data)
+        return True
     
 class TestStringMethods(unittest.TestCase):
     def test_decode_response_device_type(self):

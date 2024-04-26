@@ -213,7 +213,6 @@ class Mower:
             logger.info(f'[connect] pin is not None ([{self.pin}]). So start generating pin request')
             request = self.request.generate_request_pin(self.pin)
             response = await self._request_response(request)
-            logger.info(f'[connect] got pin response {response}')
             if response == None:
                 return False
 
@@ -332,6 +331,15 @@ class Mower:
             return False
 
         return self.response.decode_response_mower_activity(response)
+    
+    async def set_mode_of_operation(self, mode: str):
+        request = self.request.generate_set_request_mode_of_operation(mode)
+        response = await self._request_response(request)
+        return True
+    
+    
+        
+        
 
     async def mower_override(self):
         """
@@ -384,7 +392,6 @@ class Mower:
     async def start_trigger_request(self):
         request = self.request.generate_request_trigger_request()
         response = await self._request_response(request)
-        print(f'Response on start_trigger_request {response}')
         if response == None:
             return False
         return True
@@ -432,7 +439,17 @@ class Mower:
         response = await self._request_response(request)
         return self.response.decode_get_number_of_tasks_response(response)
     
+    async def set_override_mow(self, duration: int):
+        request = self.request.generate_request_override_duration("30min")
+        response = await self._request_response(request)
+        return self.response.decode_set_override_mow_response(response)
     
+    
+    async def send_operator_pin_request(self, pin):
+        request = self.request.generate_request_pin(pin)
+        response = await self._request_response(request)
+        
+        
 
     async def disconnect(self):
         """
