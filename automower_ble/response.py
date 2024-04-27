@@ -217,6 +217,154 @@ class MowerResponse:
                 return "stoppedInGarden"
             case _:
                 return "unknown"
+    
+    def decode_keepalive_response(self, data: bytearray) -> bool | None:
+        self.decode_response_template(data)
+
+        if data[12] != 0x42 and data[13] != 0x12:
+            return False
+
+        if data[14] != 0x02:
+            return False
+
+        return True
+
+    def decode_response_park(self, data: bytearray) -> int | None:
+        self.decode_response_template(data)
+
+        if data[19] != crc(data, 1, len(data) - 3):
+            return None
+        if data[20] != 0x03:
+            return None
+        return 1
+
+    def decode_getStartupSequenceRequiredResponse(self, data: bytearray) -> bool | None:
+        self.decode_response_template(data)
+        if data[17] == 0x01:
+            return True
+        return False
+
+    def decode_is_operator_loggedin_response(self, data: bytearray) -> bool | None:
+        self.decode_response_template(data)
+        if data[17] == 0x01:
+            return True
+        return False
+
+    def decode_get_mode_response(self, data:bytearray):
+        self.decode_response_template(data)
+        if data[17] != 0x01:
+            return None
+
+        if data[18] != 0x00:
+            return None
+        if data[20] != crc(data, 1, len(data) - 3):
+            return None
+
+        if data[21] != 0x03:
+            return None
+
+        state = data[19]
+
+        match state:
+            case 0:
+                return "auto"
+            case 1:
+                return "manual"
+            case 2:
+                return "home"
+            case 3: 
+                return "demo"
+
+    def decode_get_serial_number_response(self, data: bytearray):
+        self.decode_response_template(data)
+         # Length
+        if data[17] != 0x04:
+            return None
+
+        if data[18] != 0x00:
+            return None
+
+        if data[23] != crc(data, 1, len(data) - 3):
+            return None
+
+        if data[24] != 0x03:
+            return None
+
+        vale = int.from_bytes(data[19:23], byteorder='little', signed=False)
+        return vale
+
+    def decode_get_restriction_reason_response(self, data: bytearray):
+        self.decode_response_template(data)
+
+        # Length
+        if data[17] != 0x01:
+            return None
+
+        if data[18] != 0x00:
+            return None
+
+        if data[20] != crc(data, 1, len(data) - 3):
+            return None
+
+        if data[21] != 0x03:
+            return None
+
+        state = data[19]
+
+        match state:
+            case 0:
+                return "none"
+            case 1:
+                return "week_schedule"
+            case 2:
+                return "park_override"
+            case 3:
+                return "sensor"
+            case 4:
+                return "daily_limit"
+            case 5:
+                return "fota"
+            case 6:
+                return "frost_sensor"
+            case 7:
+                return "all_missions_complete"
+    
+    def decode_get_number_of_tasks_response(self, data: bytearray) -> int:
+        self.decode_response_template(data)
+
+        # Length
+        if data[17] != 0x04:
+            return None
+
+        if data[18] != 0x00:
+            return None
+
+        if data[23] != crc(data, 1, len(data) - 3):
+            return None
+
+        if data[24] != 0x03:
+            return None
+
+        vale = int.from_bytes(data[19:23], byteorder='little', signed=False)
+        return vale
+
+    def decode_set_override_mow_response(self, data: bytearray) -> bool | None:
+        self.decode_response_template(data)
+        # TODO: check response values
+        # Length
+        if data[12] != 0x32 and data[13] != 0x12:
+            return False
+
+        if data[14] != 0x03:
+            return False
+
+        if data[19] != crc(data, 1, len(data) - 3):
+            return False
+
+        if data[20] != 0x03:
+            return False
+        
+        return True
 
 
 class TestStringMethods(unittest.TestCase):

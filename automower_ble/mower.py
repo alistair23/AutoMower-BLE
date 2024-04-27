@@ -377,6 +377,71 @@ class Mower:
         logger.info("disconnecting...")
         await self.client.disconnect()
         logger.info("disconnected")
+        
+    async def set_mode_of_operation(self, mode: str):
+        request = self.request.generate_set_request_mode_of_operation(mode)
+        response = await self._request_response(request)
+        return True
+
+    async def start_trigger_request(self):
+        request = self.request.generate_request_trigger_request()
+        response = await self._request_response(request)
+        if response == None:
+            return False
+        return True
+
+    async def send_keepalive(self) -> bool:
+        request = self.request.generate_keepalive_request()
+        response = await self._request_response(request)
+        return self.response.decode_keepalive_response(response)
+
+    async def generate_request_override(self):
+        request = self.request.generate_request_override()
+        response = await self._request_response(request)
+        print(f'Response on generate_request_override {response}')
+        if response == None:
+            return False
+        return True
+
+    async def getStartupSequenceRequiredRequest(self)-> bool:
+        request = self.request.generate_getStartupSequenceRequiredRequest()
+        response = await self._request_response(request)
+        return self.response.decode_getStartupSequenceRequiredResponse(response)
+
+    async def is_operator_loggedin(self) -> bool:
+        request = self.request.generate_is_operator_loggedin_request()
+        response = await self._request_response(request)
+        return self.response.decode_is_operator_loggedin_response(response)
+
+    async def get_mode(self): 
+        request = self.request.generate_get_mode_request()
+        response = await self._request_response(request)
+        return self.response.decode_get_mode_response(response)
+
+    async def get_serial_number(self):
+        request = self.request.generate_get_serial_number()
+        response = await self._request_response(request)
+        return self.response.decode_get_serial_number_response(response)
+
+    async def get_restriction_reason(self):
+        request = self.request.generate_get_restriction_reason()
+        response = await self._request_response(request)
+        return self.response.decode_get_restriction_reason_response(response)
+
+    async def get_number_of_tasks(self):
+        request = self.request.generate_get_number_of_tasks()
+        response = await self._request_response(request)
+        return self.response.decode_get_number_of_tasks_response(response)
+
+    async def set_override_mow(self, duration: int):
+        request = self.request.generate_request_override_duration("30min")
+        response = await self._request_response(request)
+        return self.response.decode_set_override_mow_response(response)
+
+
+    async def send_operator_pin_request(self, pin):
+        request = self.request.generate_request_pin(pin)
+        response = await self._request_response(request)
 
 
 async def main(mower):

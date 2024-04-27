@@ -25,6 +25,16 @@ Requests = dict(
         ("overrideDuration", ((4658, 3), (0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00))),
         ("park", ((4658, 5), (0x00, 0x00, 0x00))),
         ("nextStartTime", ((4658, 1), (0x00, 0x00, 0x00))),
+        ("override", ((4658, 2), (0x00, 0x00, 0x00))),
+        ("request_trigger", ((4586, 4),(0x00, 0x00, 0x00))),
+        ("keepalive", ((4674, 2), (0x00, 0x00, 0x00))),
+        ("getStartupSequenceRequiredRequest", ((4698, 2), (0x00, 0x00, 0x00))),
+        ("is_operator_loggedin", ((4664, 3), (0x00, 0x00, 0x00))),
+        ("get_mode_request", ((4586, 1), (0x00, 0x00, 0x00))),
+        ("get_serial_number", ((4698, 10), (0x00, 0x00, 0x00))),
+        ("get_restriction_reason", ((4658, 0), (0x00, 0x00, 0x00))),
+        ("get_number_of_tasks", ((4690, 4), (0x00, 0x00, 0x00))),
+        ("set_mode_request", ((4586, 0), (0x00, 0x00, 0x00, 0x00)))
     ]
 )
 
@@ -262,6 +272,14 @@ class MowerRequest:
         data = self.__generate_standard_request("overrideDuration")
 
         match duration:
+            case "30min" : 
+                data[15] = 0x00
+                data[16] = 0x04
+                data[17] = 0x00
+                data[18] = 0x08
+                data[19] = 0x07
+                data[20] = 0x00
+                data[21] = 0x00
             case "3hours":
                 data[15] = 0x00
                 data[16] = 0x04
@@ -282,9 +300,86 @@ class MowerRequest:
                 return None
 
         return self.__finalise_standard_request(data)
+    
+    def generate_request_trigger_request(self) -> bytearray:
+        data = self.__generate_standard_request("request_trigger")
+        return self.__finalise_standard_request(data)
+
+    def generate_keepalive_request(self) -> bytearray:
+        data = self.__generate_standard_request("keepalive")
+        return self.__finalise_standard_request(data)
+
+    def generate_request_override(self) -> bytearray:
+        data = self.__generate_standard_request("override")
+        return self.__finalise_standard_request(data)    
+    
+    def generate_set_request_mode_of_operation(self, mode) -> bytearray:
+        data = self.__generate_standard_request("set_mode_request")
+        match mode:
+            case "auto":
+                data[16] = 0x00
+            case "manual":
+                data[16] = 0x01
+            case "home":
+                data[16] = 0x02
+            case "demo":
+                data[16] = 0x03
+            case "poi":
+                data[16] = 0x04
+            case _:
+                return None
+
+        return self.__finalise_standard_request(data)
+    
+    def generate_set_override_mow(self, duration) -> bytearray:
+        data = self.__generate_standard_request("overrideDuration")
+        data[15] = 0x00
+        data[16] = 0x04
+        data[17] = 0x00
+
+        d = duration.to_bytes(2, byteorder="little")
+        data[18] = d[0]
+        data[19] = d[1]
+
+        data[20] = 0x00
+        data[21] = 0x00
+        return self.__finalise_standard_request(data)
+
+        
+    def generate_getStartupSequenceRequiredRequest(self) -> bytearray:
+        data = self.__generate_standard_request('getStartupSequenceRequiredRequest')
+        return self.__finalise_standard_request(data)
+
+    def generate_is_operator_loggedin_request(self) -> bytearray:
+        data = self.__generate_standard_request("is_operator_loggedin" )
+        return self.__finalise_standard_request(data)
+
+    def generate_get_mode_request(self) -> bytearray:
+        data = self.__generate_standard_request("get_mode_request")
+        return self.__finalise_standard_request(data)
+
+    def generate_get_serial_number(self) -> bytearray:
+        data = self.__generate_standard_request("get_serial_number")
+        return self.__finalise_standard_request(data)
+
+    def generate_get_restriction_reason(self) -> bytearray:
+        data = self.__generate_standard_request("get_restriction_reason")
+        return self.__finalise_standard_request(data)
+    
+    def generate_get_number_of_tasks(self) -> bytearray:
+        data = self.__generate_standard_request("get_number_of_tasks")
+        return self.__finalise_standard_request(data)
+    
 
 
 class TestStringMethods(unittest.TestCase):
+    def test_pin_request(self):
+        request = MowerRequest(0x13a51453)
+        self.assertEqual(
+            binascii.hexlify(request.generate_request_pin(1331)),
+            b"02fd12005314a513011300af38120400020033050103"
+        )
+        
     def test_generate_request_setup_channel_id(self):
         request_one = MowerRequest(1197489075)
         request_two = MowerRequest(1739453030)
@@ -486,6 +581,74 @@ class TestStringMethods(unittest.TestCase):
             b"02fd14001aca985701fd00af321203000400302a00004603",
         )
 
-
+    def test_generate_request_override_duration_30_min(self):
+        request = MowerRequest(0x13a51453)
+        self.assertEqual(
+            binascii.hexlify(request.generate_request_override_duration("30min")),
+            b"02fd14005314a513019d00af321203000400080700009603",
+        )
+        
+    def test_generate_request_override(self):
+        request = MowerRequest(0x13a51453)
+        self.assertEqual(
+            binascii.hexlify(request.generate_request_override()),
+            b"02fd10005314a513016900af3212020000004103",
+        )
+        
+    def test_generate_request_trigger_request(self):
+        request = MowerRequest(0x13a51453)
+        self.assertEqual(
+            binascii.hexlify(request.generate_request_trigger_request()),
+            b"02fd10005314a513016900afea11040000006303",
+        )
+    
+    def test_generate_keepalive_request(self):
+        request = MowerRequest(0x13a51453)
+        self.assertEqual(
+            binascii.hexlify(request.generate_keepalive_request()),
+            b"02fd10005314a513016900af421202000000d903",
+        )
+    def test_generate_getStartupSequenceRequiredRequest(self):
+        request = MowerRequest(0x13a51453)
+        self.assertEqual(
+            binascii.hexlify(request.generate_getStartupSequenceRequiredRequest()),
+            b"02fd10005314a513016900af5a12020000002303",
+        )
+        
+    def test_generate_is_operator_loggedin_request(self):
+        request = MowerRequest(0x13a51453)
+        self.assertEqual(
+            binascii.hexlify(request.generate_is_operator_loggedin_request()),
+            b"02fd10005314a513016900af3812030000000103",
+        )
+        
+    def test_generate_get_mode_request(self):
+        request = MowerRequest(0x13a51453)
+        self.assertEqual(
+            binascii.hexlify(request.generate_get_mode_request()),
+            b"02fd10005314a513016900afea1101000000e203",
+        )
+        
+    def test_generate_get_serial_number(self):
+        request = MowerRequest(0x13a51453)
+        self.assertEqual(
+            binascii.hexlify(request.generate_get_serial_number()),
+            b"02fd10005314a513016900af5a120a0000003f03",
+        )
+        
+    def test_generate_get_restriction_reason(self):
+        request = MowerRequest(0x13a51453)
+        self.assertEqual(
+            binascii.hexlify(request.generate_get_restriction_reason()),
+            b"02fd10005314a513016900af3212000000004603",
+        )
+        
+    def test_generate_get_number_of_tasks(self):
+        request = MowerRequest(0x13a51453)
+        self.assertEqual(
+            binascii.hexlify(request.generate_get_number_of_tasks()),
+            b"02fd10005314a513016900af5212040000008b03",
+        )
+        
 if __name__ == "__main__":
     unittest.main()
