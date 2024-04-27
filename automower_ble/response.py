@@ -132,7 +132,7 @@ class MowerResponse:
         unixtimestamp = int.from_bytes(data[19:23], byteorder='little', signed=False)
         return unixtimestamp
 
-    def decode_response_mower_state(self, data: bytearray):
+    def decode_response_mower_state(self, data: bytearray, is_husqvarna:bool=True) ->str|None:
         self.decode_response_template(data)
 
         # Length
@@ -149,38 +149,60 @@ class MowerResponse:
             return None
 
         state = data[19]
-
-        match state:
-            case 1:
-                return "paused"
-            case 2:
-                return "stopped"
-            case 3:
-                return "error"
-            case 4:
-                return "fatalError"
-            case 5:
-                return "off"
-            case 6:
-                return "checkSafety"
-            case 7:
-                return "pendingStart"
-            case 8:
-                return "waitForSafetyPin"
-            case 9:
-                return "restricted"
-            case 10:
-                return "inOperation"
-            case 11:
-                return "unknown"
-            case 12:
-                return "connecting"
-            case 13:
-                return "pending"
-            case 14:
-                return "disconnected"
-            case _:
-                return "unknown"
+        if is_husqvarna:
+            match state:
+                case 1:
+                    return "paused"
+                case 2:
+                    return "stopped"
+                case 3:
+                    return "error"
+                case 4:
+                    return "fatalError"
+                case 5:
+                    return "off"
+                case 6:
+                    return "checkSafety"
+                case 7:
+                    return "pendingStart"
+                case 8:
+                    return "waitForSafetyPin"
+                case 9:
+                    return "restricted"
+                case 10:
+                    return "inOperation"
+                case 11:
+                    return "unknown"
+                case 12:
+                    return "connecting"
+                case 13:
+                    return "pending"
+                case 14:
+                    return "disconnected"
+                case _:
+                    return "unknown"
+        else:
+            match state:
+                case 0:
+                    return "off"
+                case 1:
+                    return "waitForSafetyPin"
+                case 2:
+                    return "stopped"
+                case 3:
+                    return "fatalError"
+                case 4:
+                    return "pendingStart"
+                case 5:
+                    return "paused"
+                case 6:
+                    return "inOperation"
+                case 7:
+                    return "restricted"
+                case 8:
+                    return "error"
+                case _:
+                    return "unknown"
 
     def decode_response_mower_activity(self, data: bytearray):
         self.decode_response_template(data)
@@ -222,20 +244,35 @@ class MowerResponse:
 class TestStringMethods(unittest.TestCase):
     def test_decode_response_device_type(self):
         response = MowerResponse(1197489078)
-
-        self.assertEqual(
-            response.decode_response_device_type(
+        decoded = response.decode_response_device_type(
                 bytearray.fromhex("02fd1300b63b604701e601af5a1209000002001701c803")
-            ),
+            )
+        
+        self.assertEqual(
+            decoded.name,
             "305",
         )
-
-        self.assertEqual(
-            response.decode_response_device_type(
+        self.assertTrue(decoded.is_husqvarna)
+        
+        decoded = response.decode_response_device_type(
                 bytearray.fromhex("02fd130038e38f0b01dc01af5a1209000002000c005903")
-            ),
+            )
+        self.assertEqual(
+            decoded.name,
             "315",
         )
+        self.assertTrue(decoded.is_husqvarna)
+        
+    def test_decode_response_device_type_non_husqvarna(self):
+        response = MowerResponse(0x5798CA1A)
+        decoded = response.decode_response_device_type(
+                bytearray.fromhex("02fd13005314a513012e01af5a1209000002001d02cd03")
+            )
+        self.assertEqual(
+            decoded.name,
+            "Minimo",
+        )
+        self.assertFalse(decoded.is_husqvarna)
 
     def test_decode_response_is_charging(self):
         response = MowerResponse(1197489078)
