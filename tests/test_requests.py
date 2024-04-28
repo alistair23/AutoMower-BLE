@@ -1,7 +1,9 @@
 import unittest
 import json
 from importlib.resources import files
-from automower_ble.protocol import *
+from automower_ble.protocol import BLEClient, Command, ModeOfOperation
+import binascii
+
 
 class TestRequestMethods(unittest.TestCase):
     def setUp(self):
@@ -72,7 +74,7 @@ class TestRequestMethods(unittest.TestCase):
 
     def test_generate_request_mode_of_operation(self):
         command = Command(0x5798CA1A, parameter=self.protocol["modeOfOperation"])
-    
+
         self.assertEqual(
             binascii.hexlify(command.generate_request(mode=ModeOfOperation.AUTO.value)),
             b"02fd11001aca9857013400afea110100010000fe03",
@@ -82,7 +84,7 @@ class TestRequestMethods(unittest.TestCase):
         command = Command(0x5798CA1A, parameter=self.protocol["overrideDuration"])
 
         self.assertEqual(
-            binascii.hexlify(command.generate_request(duration=3*3600)),
+            binascii.hexlify(command.generate_request(duration=3 * 3600)),
             b"02fd14001aca985701fd00af321203000400302a00004603",
         )
 

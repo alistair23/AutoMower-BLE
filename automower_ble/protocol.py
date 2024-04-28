@@ -10,6 +10,7 @@ from bleak.backends.characteristic import BleakGATTCharacteristic
 
 logger = logging.getLogger(__name__)
 
+
 class ModeOfOperation(Enum):
     # ProtocolTypes$IMowerAppMowerMode, used in modeOfOperation: 4586, 1
     # Comments from: https://developer.husqvarnagroup.cloud/apis/Automower+Connect+API?tab=status%20description%20and%20error%20codes#user-content-mode
@@ -18,6 +19,7 @@ class ModeOfOperation(Enum):
     HOME = 2  # Mower goes home and parks forever. Week schedule is not used. Cannot be overridden with forced mowing.
     DEMO = 3  # Same as main area, but shorter times. No blade operation
     POI = 4
+
 
 class MowerState(Enum):
     # ProtocolTypes$IMowerAppState, used in mowerState: 4586, 2
@@ -29,8 +31,11 @@ class MowerState(Enum):
     PENDING_START = 4
     PAUSED = 5  # Mower has been paused by user.
     IN_OPERATION = 6  # See value in activity for status.
-    RESTRICTED = 7 # Mower can currently not mow due to week calender, or override park.
+    RESTRICTED = (
+        7  # Mower can currently not mow due to week calender, or override park.
+    )
     ERROR = 8  # An error has occurred. Check errorCode. Mower requires manual action.
+
 
 class MowerActivity(Enum):
     # ProtocolTypes$IMowerAppActivity, used in mowerActivity: 4586, 3
@@ -43,12 +48,9 @@ class MowerActivity(Enum):
     PARKED = 5
     STOPPED_IN_GARDEN = 6  # Mower has stopped. Needs manual action to resume
 
+
 class Command:
-    def __init__(
-        self,
-        channel_id: int,
-        parameter: dict
-    ):
+    def __init__(self, channel_id: int, parameter: dict):
         self.channel_id = channel_id
 
         self.major = parameter["major"]
@@ -59,7 +61,7 @@ class Command:
         else:
             self.request_data_type = None
 
-        if type(parameter["responseType"]) is not dict:  # Always wrap in list
+        if not isinstance(parameter["responseType"], dict):  # Always wrap in list
             self.response_data_type = {"response": parameter["responseType"]}
         else:
             self.response_data_type = parameter["responseType"]
@@ -67,10 +69,10 @@ class Command:
 
     def generate_request(self, **kwargs) -> bytearray:
         self.request_data = bytearray(18)
-        self.request_data[0] = 0x02 # Hard coded value
-        self.request_data[1] = 0xFD # Hard coded value
-        self.request_data[2] = 0x00 # Length, Updated later
-        self.request_data[3] = 0x00 # Hard coded value
+        self.request_data[0] = 0x02  # Hard coded value
+        self.request_data[1] = 0xFD  # Hard coded value
+        self.request_data[2] = 0x00  # Length, Updated later
+        self.request_data[3] = 0x00  # Hard coded value
 
         # ChannelID
         id = self.channel_id.to_bytes(4, byteorder="little")
@@ -79,11 +81,13 @@ class Command:
         self.request_data[6] = id[2]
         self.request_data[7] = id[3]
 
-        self.request_data[8]= 0x01 # The third argument to e(int i10, int i11, boolean z10, T t10). Almost always 1
+        self.request_data[8] = (
+            0x01  # The third argument to e(int i10, int i11, boolean z10, T t10). Almost always 1
+        )
 
-        self.request_data[9]=0x00  # CRC, Updated later
-        self.request_data[10]=0x00 # Hard coded value
-        self.request_data[11]=0xAF # Hard coded value
+        self.request_data[9] = 0x00  # CRC, Updated later
+        self.request_data[10] = 0x00  # Hard coded value
+        self.request_data[11] = 0xAF  # Hard coded value
 
         major_bytes = self.major.to_bytes(2, byteorder="little")
 
@@ -91,7 +95,7 @@ class Command:
         self.request_data[13] = major_bytes[1]
         self.request_data[14] = self.minor
 
-        self.request_data[15] = 0x00 # Hard coded value
+        self.request_data[15] = 0x00  # Hard coded value
 
         # Byte 16 represents length of request data type
         request_length = 0
@@ -99,7 +103,15 @@ class Command:
         if self.request_data_type is not None:
             for request_name, request_type in self.request_data_type.items():
                 if request_name not in kwargs:
-                    raise ValueError("Missing request parameter: " + request_name + " for command (" + str(self.major) + ", " + str(self.minor)+")")
+                    raise ValueError(
+                        "Missing request parameter: "
+                        + request_name
+                        + " for command ("
+                        + str(self.major)
+                        + ", "
+                        + str(self.minor)
+                        + ")"
+                    )
 
                 if request_type == "uint32":
                     request_length += 4
@@ -114,34 +126,38 @@ class Command:
                     raise ValueError("Unknown request type: " + self.request_type)
         self.request_data[16] = request_length
 
-        self.request_data[17] = 0x00 # Hard coded value
+        self.request_data[17] = 0x00  # Hard coded value
 
         if request_length > 0:
             self.request_data += request_data
 
         self.request_data[2] = len(self.request_data) - 2  # Length
 
-        self.request_data[9] = crc(self.request_data, 1, 8)# CRC
+        self.request_data[9] = crc(self.request_data, 1, 8)  # CRC
 
         # Two last bytes are crc and 0x03
         self.request_data.append(crc(self.request_data, 1, len(self.request_data) - 1))
-        self.request_data.append(0x03)# Hard coded value
+        self.request_data.append(0x03)  # Hard coded value
 
         return self.request_data
 
     def parse_response(self, response_data: bytearray) -> int | None:
         response_length = response_data[17]
-        data = response_data[19:19 + response_length]
+        data = response_data[19 : 19 + response_length]
         response = dict()
-        dpos = 0 # data position
-        for name, dtype in self.response_data_type.items(): 
-            if (dtype == "no_response"):
+        dpos = 0  # data position
+        for name, dtype in self.response_data_type.items():
+            if dtype == "no_response":
                 return None
             elif (dtype == "tUnixTime") or (dtype == "uint32"):
-                response[name]=int.from_bytes(data[dpos : dpos + 4], byteorder="little")
+                response[name] = int.from_bytes(
+                    data[dpos : dpos + 4], byteorder="little"
+                )
                 dpos += 4
             elif dtype == "uint16":
-                response[name]=int.from_bytes(data[dpos : dpos + 2], byteorder="little")
+                response[name] = int.from_bytes(
+                    data[dpos : dpos + 2], byteorder="little"
+                )
                 dpos += 2
             elif (dtype == "uint8") or (dtype == "bool"):
                 response[name] = data[dpos]
@@ -149,7 +165,9 @@ class Command:
             else:
                 raise ValueError("Unknown data type: " + dtype)
         if dpos != len(data):
-            raise ValueError("Data length mismatch. Read %d bytes of %d" % (dpos, len(data)))
+            raise ValueError(
+                "Data length mismatch. Read %d bytes of %d" % (dpos, len(data))
+            )
 
         return response
 
@@ -203,6 +221,7 @@ class Command:
 
         return True
 
+
 class BLEClient:
     def __init__(self, channel_id: int, address, pin=None):
         self.channel_id = channel_id
@@ -213,7 +232,7 @@ class BLEClient:
         self.queue = asyncio.Queue()
 
         with files("automower_ble").joinpath("protocol.json").open("r") as f:
-            self.protocol = json.load(f) # Load the JSON file
+            self.protocol = json.load(f)  # Load the JSON file
 
     async def _get_response(self):
         try:
@@ -241,7 +260,7 @@ class BLEClient:
     async def _read_data(self):
         data = await self._get_response()
 
-        if data == None:
+        if data is None:
             return None
 
         if len(data) < 3:
@@ -282,7 +301,7 @@ class BLEClient:
                 await self._write_data(request_data)
 
                 response_data = await self._read_data()
-                if response_data == None:
+                if response_data is None:
                     i = i - 1
                     continue
 
@@ -369,23 +388,23 @@ class BLEClient:
 
         request = self.generate_request_setup_channel_id()
         response = await self._request_response(request)
-        if response == None:
+        if response is None:
             return False
 
         ### TODO: Check response
 
         request = self.generate_request_handshake()
         response = await self._request_response(request)
-        if response == None:
+        if response is None:
             return False
 
         ### TODO: Check response
-        
+
         if self.pin is not None:
             command = Command(self.channel_id, self.protocol["pin"])
             request = command.generate_request(code=self.pin)
             response = await self._request_response(request)
-            if response == None:
+            if response is None:
                 return False
 
         return True

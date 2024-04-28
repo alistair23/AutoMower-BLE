@@ -1,8 +1,9 @@
 import unittest
 import json
 from importlib.resources import files
-from automower_ble.protocol import *
+from automower_ble.protocol import Command, MowerState, MowerActivity
 from automower_ble.models import MowerModels
+
 
 class TestRequestMethods(unittest.TestCase):
     def setUp(self):
@@ -27,6 +28,7 @@ class TestRequestMethods(unittest.TestCase):
             MowerModels[(response["deviceType"], response["deviceSubType"])],
             "315",
         )
+
     def test_decode_response_is_charging(self):
         command = Command(1197489078, self.protocol["isCharging"])
 
@@ -39,7 +41,7 @@ class TestRequestMethods(unittest.TestCase):
         self.assertEqual(
             command.parse_response(
                 bytearray.fromhex("02fd1200b63b604701db01af0a101500000100004803")
-            )['response'],
+            )["response"],
             False,
         )
 
@@ -47,15 +49,17 @@ class TestRequestMethods(unittest.TestCase):
         command = Command(1197489078, self.protocol["mowerState"])
 
         self.assertNotIn(
-            command.parse_response(bytearray.fromhex("02fd1200b33b6047010901afea110100000100008103"))['response'],
-            [1,2,3,4,5,6,7,8,9,10,12,13,14], # 11=unknown
+            command.parse_response(
+                bytearray.fromhex("02fd1200b33b6047010901afea110100000100008103")
+            )["response"],
+            [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14],  # 11=unknown
         )
 
         command = Command(876143061, self.protocol["mowerState"])
         self.assertEqual(
             command.parse_response(
                 bytearray.fromhex("02fd1200d5e13834012301afea110200000100033a03")
-            )['response'],
+            )["response"],
             MowerState.FATAL_ERROR.value,
         )
 
@@ -68,6 +72,7 @@ class TestRequestMethods(unittest.TestCase):
             )["response"],
             MowerActivity.GOING_OUT.value,  # 2 = goingOut
         )
+
 
 if __name__ == "__main__":
     unittest.main()

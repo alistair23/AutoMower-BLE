@@ -66,60 +66,52 @@
         "responseType": "no_response",
         "description": "PIN code for the mower."
     },
-    "remainingChargeTime":
-    {
+    "remainingChargeTime": {
         "major": 4106,
         "minor": 22,
         "responseType": "uint32",
         "description": "Remaining charge time."
     },
-    "modeOfOperation":
-    {
+    "modeOfOperation": {
         "major": 4586,
         "minor": 1,
         "requestType": {
             "mode": "uint8"
         },
-        "responseType": "no_response",        
+        "responseType": "no_response",
         "description": "Set mode of operation."
     },
-    "mowerState":
-    {
+    "mowerState": {
         "major": 4586,
         "minor": 2,
         "responseType": "uint8",
         "description": "Mower state."
     },
-    "mowerActivity":
-    {
+    "mowerActivity": {
         "major": 4586,
         "minor": 3,
         "responseType": "uint8",
         "description": "Mower activity."
     },
-    "resume":
-    {
+    "resume": {
         "major": 4586,
         "minor": 4,
         "responseType": "no_response",
         "description": "Resume mower."
     },
-    "pause":
-    {
+    "pause": {
         "major": 4586,
         "minor": 5,
         "responseType": "no_response",
         "description": "Pause mower."
     },
-    "errorCode":
-    {
+    "errorCode": {
         "major": 4586,
         "minor": 6,
         "responseType": "uint32",
         "description": "Error code."
     },
-    "overrideDuration":
-    {
+    "overrideDuration": {
         "major": 4658,
         "minor": 3,
         "requestType": {
@@ -128,15 +120,13 @@
         "responseType": "no_response",
         "description": "Override duration for the specified duration in seconds."
     },
-    "park":
-    {
+    "park": {
         "major": 4658,
         "minor": 5,
         "responseType": "no_response",
         "description": "Park mower."
     },
-    "serialNumber":
-    {
+    "serialNumber": {
         "major": 4698,
         "minor": 10,
         "responseType": "uint32",

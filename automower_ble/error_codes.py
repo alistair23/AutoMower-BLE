@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class ErrorCodes(Enum):
     UNEXPECTED_ERROR = 0
     OUTSIDE_WORKING_AREA = 1
