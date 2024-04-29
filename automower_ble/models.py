@@ -40,6 +40,7 @@ MowerModels = dict(
         ((24, 2), "Ceora544EPOS"),
         ((24, 1), "Ceora546EPOS"),
         ((29, 2), "Minimo"),
+        ((29, 3), "Minimo-500"),
         ((31, 1), "320Nera"),
         ((31, 2), "430XNera"),
         ((31, 3), "450XNera"),
