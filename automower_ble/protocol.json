@@ -1,0 +1,135 @@
+{
+    "nextStartTime": {
+        "major": 4658,
+        "minor": 1,
+        "responseType": "tUnixTime",
+        "description": "Next start time, if available."
+    },
+    "batteryLevel": {
+        "major": 4106,
+        "minor": 20,
+        "responseType": "uint8",
+        "description": "Battery level in percent."
+    },
+    "isCharging": {
+        "major": 4106,
+        "minor": 21,
+        "responseType": "bool",
+        "description": "Indicates if the mower is charging."
+    },
+    "deviceType": {
+        "major": 4698,
+        "minor": 9,
+        "responseType": {
+            "deviceType": "uint8",
+            "deviceSubType": "uint8"
+        },
+        "description": "Device type tuple."
+    },
+    "numberOfMessages": {
+        "major": 4730,
+        "minor": 0,
+        "responseType": "uint32",
+        "description": "Number of messages in the message log."
+    },
+    "getMessage": {
+        "major": 4730,
+        "minor": 1,
+        "requestType": {
+            "messageId": "uint32"
+        },
+        "responseType": {
+            "messageTime": "tUnixTime",
+            "code": "uint32",
+            "severity": "uint8"
+        }
+    },
+    "getStatuses": {
+        "major": 4726,
+        "minor": 0,
+        "responseType": {
+            "totalRunningTime": "uint32",
+            "totalCuttingTime": "uint32",
+            "totalChargingTime": "uint32",
+            "totalSearchingTime": "uint32",
+            "numberOfCollisions": "uint32",
+            "numberOfChargingCycles": "uint32",
+            "cuttingBladeUsageTime": "uint32"
+        }
+    },
+    "pin": {
+        "major": 4664,
+        "minor": 4,
+        "requestType": {
+            "code": "uint16"
+        },
+        "responseType": "no_response",
+        "description": "PIN code for the mower."
+    },
+    "remainingChargeTime": {
+        "major": 4106,
+        "minor": 22,
+        "responseType": "uint32",
+        "description": "Remaining charge time."
+    },
+    "modeOfOperation": {
+        "major": 4586,
+        "minor": 1,
+        "requestType": {
+            "mode": "uint8"
+        },
+        "responseType": "no_response",
+        "description": "Set mode of operation."
+    },
+    "mowerState": {
+        "major": 4586,
+        "minor": 2,
+        "responseType": "uint8",
+        "description": "Mower state."
+    },
+    "mowerActivity": {
+        "major": 4586,
+        "minor": 3,
+        "responseType": "uint8",
+        "description": "Mower activity."
+    },
+    "resume": {
+        "major": 4586,
+        "minor": 4,
+        "responseType": "no_response",
+        "description": "Resume mower."
+    },
+    "pause": {
+        "major": 4586,
+        "minor": 5,
+        "responseType": "no_response",
+        "description": "Pause mower."
+    },
+    "errorCode": {
+        "major": 4586,
+        "minor": 6,
+        "responseType": "uint32",
+        "description": "Error code."
+    },
+    "overrideDuration": {
+        "major": 4658,
+        "minor": 3,
+        "requestType": {
+            "duration": "uint32"
+        },
+        "responseType": "no_response",
+        "description": "Override duration for the specified duration in seconds."
+    },
+    "park": {
+        "major": 4658,
+        "minor": 5,
+        "responseType": "no_response",
+        "description": "Park mower."
+    },
+    "serialNumber": {
+        "major": 4698,
+        "minor": 10,
+        "responseType": "uint32",
+        "description": "Serial number of the mower."
+    }
+}
