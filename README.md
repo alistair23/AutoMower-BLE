@@ -10,40 +10,45 @@ Details on how this was developed are available at: https://www.alistair23.me/20
 
 This was developed and tested against a Automower 305, but it should work on all Automowers. If you are able to test on different models please do and report any results back.
 
-## Testing Requests
-
-You can run the request unit tests with
-
+## Installation
+This library can be installed by 
 ```shell
-python3 ./request.py
+pip3 install automower-ble
 ```
+Please note that the library is under active development and that the code on github might not be released for pip.
 
-## Testing Responses
-
-You can run the response unit tests with
-
-```shell
-python3 ./response.py
-```
 ## Testing Connections
 
-You can test querying data and sending commands with the following
+You can test querying data with the following
 
 ```shell
 python3 ./mower.py --address D8:B6:73:40:07:37
 ```
 
-You can uncomment parts of `async def main(mower)` to send commands
+You can uncomment parts of `async def main(mower)` to send commands.
 
-## Debugging on an android phone
+To get the address, the `ble_scanner.py` script can be run.
 
-You can get Bluetooth debug logs from an android phone which will help for unknown codes
+## Unit testing for developers
+
+Unit tests are found in the /tests/ folder.
+
+You can run the unit tests with [pytest](https://docs.pytest.org). Install it by `pip3 install pytest`. In the root path, just run
+
+```shell
+pytest
+```
+
+
+## Debugging logs on an Android phone
+
+You can get Bluetooth debug logs from an Android phone which will help development for new features, unknown codes
 or implementation of extra devices. To debug you need to enable developer mode on your
-android handset/tablet (and have the manufacturer app installed to communicate with your mower)
+Android handset/tablet (and have the manufacturer app installed to communicate with your mower)
 
-To enable debug mode on android:
+To enable debug mode on Android:
 
-* Go into settings and System (Sometimes this is in About phone). Look for the "Build  number" entry.
+* Go into settings and System (Sometimes this is in About phone). Look for the "Build number" entry.
 * Tap this several times, onscreen you should then see a note confirming by tapping 7 times developer mode will be enabled.
 * Once enabled, click BACK and you'll see a "Developer Options" menu. In there scroll to find "Enable Bluetooth HCI snoop log".
 * Set "Enable Bluetooth HCI snoop log" to "Enabled"
@@ -63,4 +68,3 @@ Extract that zip file and the bluetooth HCI snoop file is in FS/data/log/bt/btsn
 
 These bluetooth hci snoop files (btsnoop_hci.log) are in wireshark file format so use wireshark to view them.
 You can then see the commands sent and received from your mower and can then decode/investigate the commands.
-
