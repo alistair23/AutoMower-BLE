@@ -72,14 +72,20 @@
         "responseType": "uint32",
         "description": "Remaining charge time."
     },
-    "modeOfOperation": {
+    "setModeOfOperation": {
         "major": 4586,
-        "minor": 1,
+        "minor": 0,
         "requestType": {
             "mode": "uint8"
         },
         "responseType": "no_response",
         "description": "Set mode of operation."
+    },
+    "getModeOfOperation": {
+        "major": 4586,
+        "minor": 1,
+        "responseType":"uint8",
+        "description": "Get mode of operation"
     },
     "mowerState": {
         "major": 4586,
@@ -162,12 +168,6 @@
         "responseType": "bool",
         "description": "Check if the operator is logged in or not"
     },
-    "getModeRequest": {
-        "major": 4586,
-        "minor": 1,
-        "responseType":"uint8",
-        "description": "????"
-    },
     "getRestrictionReason":{
         "major": 4658,
         "minor": 0,
@@ -180,12 +180,23 @@
         "responseType":"uint32",
         "description": "Get the number of tasks"
     },
-    "setModeRequest": {
-        "major": 4586,
-        "minor": 0,
+    "getTask": {
+        "major": 4690,
+        "minor": 5,
         "requestType":{
-            "mode": "uint8"
-        }
+            "task": "uint32"
+        },
+        "responseType": {
+            "next_start_time": "tUnixTime",
+            "duration_in_seconds": "uint32",
+            "on_monday": "bool",
+            "on_tuesday": "bool",
+            "on_wednesday": "bool",
+            "on_thursday": "bool",
+            "on_friday": "bool",
+            "on_saturday": "bool",
+            "on_sunday": "bool"            
+        },
+        "description": "Get a specified task"
     }
-
 }
