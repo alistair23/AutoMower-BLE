@@ -98,7 +98,7 @@ class Mower(BLEClient):
         Force the mower to run for the specified duration in hours.
         """
         # Set mode of operation to manual:
-        await self.set_parameter("modeOfOperation", mode=ModeOfOperation.MANUAL)
+        await self.set_parameter("setModeOfOperation", mode=ModeOfOperation.MANUAL)
 
         # Set the duration of operation:
         await self.set_parameter("overrideDuration", duration=duration_hours * 3600)
