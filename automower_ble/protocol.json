@@ -72,14 +72,20 @@
         "responseType": "uint32",
         "description": "Remaining charge time."
     },
-    "modeOfOperation": {
+    "setModeOfOperation": {
         "major": 4586,
-        "minor": 1,
+        "minor": 0,
         "requestType": {
             "mode": "uint8"
         },
         "responseType": "no_response",
         "description": "Set mode of operation."
+    },
+    "getModeOfOperation": {
+        "major": 4586,
+        "minor": 1,
+        "responseType":"uint8",
+        "description": "Get mode of operation"
     },
     "mowerState": {
         "major": 4586,
