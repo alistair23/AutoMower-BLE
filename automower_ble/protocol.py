@@ -47,6 +47,16 @@ class MowerActivity(Enum):
     GOING_HOME = 4  # Mower is going home to the charging station.
     PARKED = 5
     STOPPED_IN_GARDEN = 6  # Mower has stopped. Needs manual action to resume
+    
+class RestrictionReason(Enum):
+    NONE = 0
+    WEEK_SCHEDULE = 1
+    PARK_OVERRIDE = 2
+    SENSOR = 3
+    DAILY_LIMIT = 4
+    FOTA = 5
+    FROST_SENSOR = 6
+    ALL_MISSIONS_COMPLETE = 7
 
 class TaskInformation(object):
     def __init__(self,

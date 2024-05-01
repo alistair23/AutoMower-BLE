@@ -100,7 +100,7 @@ class TestRequestMethods(unittest.TestCase):
         command = Command(0x13a51453, parameter=self.protocol['getTask'])
         
         self.assertEqual(
-            binascii.hexlify(command.generate_request(task=0)),
+            binascii.hexlify(command.generate_request(unknown=0,task=0)),
             b"02fd14005314a513019d00af52120500040000000000d203",
         )
     

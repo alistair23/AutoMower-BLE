@@ -184,7 +184,8 @@
         "major": 4690,
         "minor": 5,
         "requestType":{
-            "task": "uint8"
+            "unknown": "uint16",
+            "task": "uint16"
         },
         "responseType": {
             "next_start_time": "uint32",
@@ -196,7 +197,7 @@
             "on_friday": "bool",
             "on_saturday": "bool",
             "on_sunday": "bool",
-            "unknown": "uint16"            
+            "unknown": "uint32"            
         },
         "description": "Get a specified task"
     }

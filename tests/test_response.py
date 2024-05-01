@@ -1,7 +1,8 @@
 import unittest
 import json
 from importlib.resources import files
-from automower_ble.protocol import Command, MowerState, MowerActivity
+from automower_ble.protocol import Command, MowerState, MowerActivity, TaskInformation
+from datetime import datetime, timezone
 from automower_ble.models import MowerModels
 
 
@@ -76,7 +77,7 @@ class TestRequestMethods(unittest.TestCase):
     def test_decode_get_task_response(self):
         response = Command(1197489078, self.protocol["getTask"])
         decoded =response.parse_response(
-                bytearray.fromhex("02fd240025be246a010701af5212050000130000e1000038310000010001010001013003")
+                bytearray.fromhex("02fd24005314a513018901af5212050000130000e100003831000001000101000101000000003003")
             )
         
         self.assertEqual(
@@ -87,8 +88,20 @@ class TestRequestMethods(unittest.TestCase):
             decoded['duration_in_seconds'],
             12600,  # 2 = goingOut
         )
+        ti = TaskInformation(datetime.fromtimestamp(decoded['next_start_time'], timezone.utc),
+                               decoded['duration_in_seconds'],
+                               decoded['on_monday'] == 1,
+                               decoded['on_tuesday']== 1,
+                               decoded['on_wednesday']== 1,
+                               decoded['on_thursday']== 1,
+                               decoded['on_friday']== 1,
+                               decoded['on_saturday']== 1,
+                               decoded['on_sunday']== 1,
+                               )
         self.assertEqual(decoded['on_monday'], 1)
+        self.assertTrue(ti.on_monday)
         self.assertEqual(decoded['on_tuesday'], 0)
+        self.assertFalse(ti.on_tuesday)
         self.assertEqual(decoded['on_wednesday'], 1)
         self.assertEqual(decoded['on_thursday'], 1)
         self.assertEqual(decoded['on_friday'], 0)
