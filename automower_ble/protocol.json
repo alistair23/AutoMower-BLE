@@ -184,10 +184,10 @@
         "major": 4690,
         "minor": 5,
         "requestType":{
-            "task": "uint32"
+            "task": "uint8"
         },
         "responseType": {
-            "next_start_time": "tUnixTime",
+            "next_start_time": "uint32",
             "duration_in_seconds": "uint32",
             "on_monday": "bool",
             "on_tuesday": "bool",
@@ -195,7 +195,8 @@
             "on_thursday": "bool",
             "on_friday": "bool",
             "on_saturday": "bool",
-            "on_sunday": "bool"            
+            "on_sunday": "bool",
+            "unknown": "uint32"            
         },
         "description": "Get a specified task"
     }

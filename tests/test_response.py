@@ -73,6 +73,16 @@ class TestRequestMethods(unittest.TestCase):
             MowerActivity.GOING_OUT.value,  # 2 = goingOut
         )
 
+    def test_decode_get_task_response(self):
+        response = Command(1197489078, self.protocol["getTask"])
+        decoded =response.parse_response(
+                bytearray.fromhex("02fd240025be246a010701af5212050000130000e1000038310000010001010001013003")
+            )["response"]
+        
+        self.assertEqual(
+            decoded.duration_in_seconds,
+            12600,  # 2 = goingOut
+        )
 
 if __name__ == "__main__":
     unittest.main()

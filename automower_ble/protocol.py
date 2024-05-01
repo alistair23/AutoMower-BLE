@@ -164,6 +164,7 @@ class Command:
     def parse_response(self, response_data: bytearray) -> int | None:
         response_length = response_data[17]
         data = response_data[19 : 19 + response_length]
+        print(f'data parse response : { binascii.hexlify(data)}')
         response = dict()
         dpos = 0  # data position
         for name, dtype in self.response_data_type.items():
@@ -184,6 +185,7 @@ class Command:
                 dpos += 1
             else:
                 raise ValueError("Unknown data type: " + dtype)
+            print(f'response[{name}]={response[name]}')
         if dpos != len(data):
             raise ValueError(
                 "Data length mismatch. Read %d bytes of %d" % (dpos, len(data))
