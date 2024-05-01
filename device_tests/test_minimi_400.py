@@ -44,7 +44,7 @@ async def main(mower:Mower, must_start:bool = False, must_stop:bool = False):
         if not keepalive_response:
             logger.error(f'Error sending keepalive request {keepalive_response}')
 
-        enterOperatorPinRequestResult = await mower.send_operator_pin_request(1331)
+        enterOperatorPinRequestResult = await mower.send_operator_pin_request(mower.pin)
         logger.debug(f'Enter Operator Pin Request Result {enterOperatorPinRequestResult}')
 
 
