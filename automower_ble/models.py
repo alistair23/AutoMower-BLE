@@ -1,5 +1,5 @@
 """
-    A list of supported Automower models
+A list of supported Automower models
 """
 
 # Copyright: Alistair Francis <alistair@alistair23.me>
