@@ -48,6 +48,26 @@ class MowerActivity(Enum):
     PARKED = 5
     STOPPED_IN_GARDEN = 6  # Mower has stopped. Needs manual action to resume
 
+class TaskInformation(object):
+    def __init__(self,
+                 next_start_time,
+                 duration_in_seconds,
+                 on_monday,
+                 on_tuesday,
+                 on_wednesday,
+                 on_thursday,
+                 on_friday,
+                 on_saturday,
+                 on_sunday):
+        self.next_start_time = next_start_time
+        self.duration_in_seconds = duration_in_seconds
+        self.on_monday = on_monday
+        self.on_tuesday = on_tuesday
+        self.on_wednesday = on_wednesday
+        self.on_thursday = on_thursday
+        self.on_friday = on_friday
+        self.on_saturday = on_saturday
+        self.on_sunday = on_sunday
 
 class Command:
     def __init__(self, channel_id: int, parameter: dict):
@@ -168,7 +188,6 @@ class Command:
             raise ValueError(
                 "Data length mismatch. Read %d bytes of %d" % (dpos, len(data))
             )
-
         return response
 
     def validate_response(self, response_data: bytearray) -> bool:

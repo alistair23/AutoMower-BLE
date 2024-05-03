@@ -137,5 +137,67 @@
         "minor": 10,
         "responseType": "uint32",
         "description": "Serial number of the mower."
+    },
+    "override": {
+        "major": 4658,
+        "minor": 2,
+        "responseType": "no_response",
+        "description": "Main override request"
+    },
+    "requestTrigger":{
+        "major": 4586,
+        "minor": 4,
+        "responseType": "no_response",
+        "description": "Requesting trigger"
+    },
+    "keepalive": {
+        "major": 4674,
+        "minor": 2,
+        "responseType":"no_response",
+        "description": "Sending a keep alive to the mower"
+    },
+    "getStartupSequenceRequiredRequest": {
+        "major": 4698,
+        "minor": 2,
+        "responseType": "bool",
+        "description": "Request mower if startup sequence is required or not"
+    },
+    "isOperatorLoggedIn": {
+        "major": 4664,
+        "minor": 3,
+        "responseType": "bool",
+        "description": "Check if the operator is logged in or not"
+    },
+    "getRestrictionReason":{
+        "major": 4658,
+        "minor": 0,
+        "responseType":"uint8",
+        "description": "Get the type of reason of restriction"
+    },
+    "getNumberOfTasks" : {
+        "major": 4690,
+        "minor": 4,
+        "responseType":"uint32",
+        "description": "Get the number of tasks"
+    },
+    "getTask": {
+        "major": 4690,
+        "minor": 5,
+        "requestType":{
+            "task": "uint8"
+        },
+        "responseType": {
+            "next_start_time": "uint32",
+            "duration_in_seconds": "uint32",
+            "on_monday": "bool",
+            "on_tuesday": "bool",
+            "on_wednesday": "bool",
+            "on_thursday": "bool",
+            "on_friday": "bool",
+            "on_saturday": "bool",
+            "on_sunday": "bool",
+            "unknown": "uint16"            
+        },
+        "description": "Get a specified task"
     }
 }
