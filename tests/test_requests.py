@@ -79,7 +79,7 @@ class TestRequestMethods(unittest.TestCase):
             binascii.hexlify(command.generate_request(mode=ModeOfOperation.AUTO.value)),
             b"02fd11001aca9857013400afea1100000100003303",
         )
-    
+
     def test_generate_request_get_mode_of_operation(self):
         command = Command(0x5798CA1A, parameter=self.protocol["getModeOfOperation"])
 
