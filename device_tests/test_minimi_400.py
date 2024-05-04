@@ -4,11 +4,13 @@ import logging
 
 from bleak import BleakClient, BleakScanner
 from bleak.backends.characteristic import BleakGATTCharacteristic
+
 from datetime import datetime, timezone
 import sys
 sys.path.append('../')
 
 from automower_ble.mower import Mower
+from automower_ble.protocol import ModeOfOperation
 
 logger = logging.getLogger(__name__)
 
@@ -117,7 +119,7 @@ async def main(mower:Mower, must_start:bool = False, must_stop:bool = False):
 
             logger.debug('--------------')
             logger.debug('start setting mode to manual')
-            await mower.set_mode_of_operation("manual")
+            await mower.set_mode_of_operation(ModeOfOperation.MANUAL)
             logger.debug('Mode of operation set to manual')
             logger.debug('--------------')
 
@@ -133,7 +135,7 @@ async def main(mower:Mower, must_start:bool = False, must_stop:bool = False):
             
         if must_stop:
             logger.debug(f'Must stop mowing. Send Park command to mower')
-            await mower.set_mode_of_operation('manual')
+            await mower.set_mode_of_operation(ModeOfOperation.MANUAL)
             logger.debug('Finished setting mode of operation to manual. Sending park command')
             await mower.mower_park()
             logger.debug('Finished sending park command')

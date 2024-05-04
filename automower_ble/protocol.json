@@ -184,7 +184,6 @@
         "major": 4690,
         "minor": 5,
         "requestType":{
-            "unknown": "uint16",
             "task": "uint32"
         },
         "responseType": {

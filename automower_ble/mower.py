@@ -154,7 +154,7 @@ class Mower(BLEClient):
         return ModeOfOperation(mode_response)
     
     async def set_mode_of_operation(self, mode:ModeOfOperation):
-        await self.set_parameter('setModeOfOperation', mode=mode )
+        await self.set_parameter('setModeOfOperation', mode=mode.value )
     
     async def start_trigger_request(self) -> None:
         request_trigger_response = await self.get_parameter('requestTrigger')
