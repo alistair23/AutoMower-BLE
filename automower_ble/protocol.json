@@ -185,7 +185,7 @@
         "minor": 5,
         "requestType":{
             "unknown": "uint16",
-            "task": "uint16"
+            "task": "uint32"
         },
         "responseType": {
             "next_start_time": "uint32",
