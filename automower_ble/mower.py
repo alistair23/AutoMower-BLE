@@ -62,7 +62,7 @@ class Mower(BLEClient):
 
         modelInformation = MowerModels.get((model["deviceType"], model["deviceSubType"]))
         if modelInformation is None:
-            return "Unknown"
+            return f"Unknown Manufacturer ({model['deviceType']}, {model['deviceSubType']})"
 
         return modelInformation.manufacturer
 
@@ -75,7 +75,7 @@ class Mower(BLEClient):
 
         modelInformation = MowerModels.get((model["deviceType"], model["deviceSubType"]))
         if modelInformation is None:
-            return "Unknown"
+            return f"Unknown Model ({model['deviceType']}, {model['deviceSubType']})"
 
         return modelInformation.model
 
