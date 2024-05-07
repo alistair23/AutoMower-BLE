@@ -53,14 +53,31 @@ class Mower(BLEClient):
         else:
             return response_dict
 
+    async def get_manufacturer(self) -> str | None:
+        """Get the mower manufacturer"""
+        # Todo: Change MowerModels to an enum?
+        model = await self.get_parameter("deviceType")
+        if model is None:
+            return None
+
+        modelInformation = MowerModels.get((model["deviceType"], model["deviceSubType"]))
+        if modelInformation is None:
+            return "Unknown"
+
+        return modelInformation.manufacturer
+
     async def get_model(self) -> str | None:
         """Get the mower model"""
         # Todo: Change MowerModels to an enum?
         model = await self.get_parameter("deviceType")
         if model is None:
             return None
-        else:
-            return MowerModels[(model["deviceType"], model["deviceSubType"])]
+
+        modelInformation = MowerModels.get((model["deviceType"], model["deviceSubType"]))
+        if modelInformation is None:
+            return "Unknown"
+
+        return modelInformation.model
 
     async def is_charging(self) -> bool:
         if await mower.get_parameter("isCharging"):
@@ -143,12 +160,11 @@ async def main(mower: Mower):
 
     await mower.connect(device)
 
-    try:
-        model = await mower.get_model()
-    except KeyError:
-        model = "Untested"
+    manufacturer = await mower.get_manufacturer()
+    print("Mower manufacturer: " + manufacturer)
 
-    print("Connected to: " + model)
+    model = await mower.get_model()
+    print("Mower model: " + model)
 
     charging = await mower.is_charging()
     if charging:
