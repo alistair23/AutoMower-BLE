@@ -26,7 +26,7 @@ class Mower(BLEClient):
 
     async def set_parameter(self, parameter_name: str, **kwargs) -> None:
         """
-        This is the same function as get_parameter but with a differerent name to make syntax a bit more clear.
+        This is the same function as get_parameter but with a different name to make syntax a bit more clear.
         It also does not handle any response even though it upstream reads the response."""
         self.get_parameter(parameter_name, **kwargs)
 
@@ -55,29 +55,27 @@ class Mower(BLEClient):
 
     async def get_manufacturer(self) -> str | None:
         """Get the mower manufacturer"""
-        # Todo: Change MowerModels to an enum?
         model = await self.get_parameter("deviceType")
         if model is None:
             return None
 
-        modelInformation = MowerModels.get((model["deviceType"], model["deviceSubType"]))
-        if modelInformation is None:
+        model_information = MowerModels.get((model["deviceType"], model["deviceSubType"]))
+        if model_information is None:
             return f"Unknown Manufacturer ({model['deviceType']}, {model['deviceSubType']})"
 
-        return modelInformation.manufacturer
+        return model_information.manufacturer
 
     async def get_model(self) -> str | None:
         """Get the mower model"""
-        # Todo: Change MowerModels to an enum?
         model = await self.get_parameter("deviceType")
         if model is None:
             return None
 
-        modelInformation = MowerModels.get((model["deviceType"], model["deviceSubType"]))
-        if modelInformation is None:
+        model_information = MowerModels.get((model["deviceType"], model["deviceSubType"]))
+        if model_information is None:
             return f"Unknown Model ({model['deviceType']}, {model['deviceSubType']})"
 
-        return modelInformation.model
+        return model_information.model
 
     async def is_charging(self) -> bool:
         if await mower.get_parameter("isCharging"):
