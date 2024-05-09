@@ -17,16 +17,16 @@ class TestRequestMethods(unittest.TestCase):
             bytearray.fromhex("02fd1300b63b604701e601af5a1209000002001701c803")
         )
         self.assertEqual(
-            MowerModels[(response["deviceType"], response["deviceSubType"])],
-            "305",
+            MowerModels[(response["deviceType"], response["deviceSubType"])].model,
+            "Automower 305",
         )
 
         response = command.parse_response(
             bytearray.fromhex("02fd130038e38f0b01dc01af5a1209000002000c005903")
         )
         self.assertEqual(
-            MowerModels[(response["deviceType"], response["deviceSubType"])],
-            "315",
+            MowerModels[(response["deviceType"], response["deviceSubType"])].model,
+            "Automower 315",
         )
 
     def test_decode_response_is_charging(self):
