@@ -89,10 +89,10 @@ class Command:
 
     def generate_request(self, **kwargs) -> bytearray:
         self.request_data = bytearray(18)
-        self.request_data[0] = 0x02  # Hard coded value
-        self.request_data[1] = 0xFD  # Hard coded value
-        self.request_data[2] = 0x00  # Length, Updated later
-        self.request_data[3] = 0x00  # Hard coded value
+        self.request_data[0] = 0x02  # Hard coded value (start of packet)
+        self.request_data[1] = 0xFD  # 0xFD = LINKED_PACKET_TYPE
+        self.request_data[2] = 0x00  # Length, low byte, updated later
+        self.request_data[3] = 0x00  # Length, high byte, updated later
 
         # ChannelID
         id = self.channel_id.to_bytes(4, byteorder="little")
@@ -102,20 +102,19 @@ class Command:
         self.request_data[7] = id[3]
 
         self.request_data[8] = (
-            0x01  # The third argument to e(int i10, int i11, boolean z10, T t10). Almost always 1
+            0x01  # is_linked (usually 0x01)
         )
 
         self.request_data[9] = 0x00  # CRC, Updated later
-        self.request_data[10] = 0x00  # Hard coded value
+        self.request_data[10] = 0x00  # Packet type (0x00 = request, 0x01 = response, 0x02 = event)
         self.request_data[11] = 0xAF  # Hard coded value
 
         major_bytes = self.major.to_bytes(2, byteorder="little")
 
-        self.request_data[12] = major_bytes[0]
-        self.request_data[13] = major_bytes[1]
-        self.request_data[14] = self.minor
-
-        self.request_data[15] = 0x00  # Hard coded value
+        self.request_data[12] = major_bytes[0] # low byte of 'module'
+        self.request_data[13] = major_bytes[1] # high byte of 'module'
+        self.request_data[14] = self.minor # low byte of 'command'
+        self.request_data[15] = 0x00  # high byte of 'command'
 
         # Byte 16 represents length of request data type
         request_length = 0
@@ -146,8 +145,7 @@ class Command:
                     raise ValueError("Unknown request type: " + self.request_type)
         self.request_data[16] = request_length
 
-        self.request_data[17] = 0x00  # Hard coded value
-
+        self.request_data[17] = 0x00  # high byte of request_length
         if request_length > 0:
             self.request_data += request_data
 
@@ -197,7 +195,7 @@ class Command:
         if response_data[1] != 0xFD:
             return False
 
-        if response_data[3] != 0x00:
+        if response_data[3] != 0x00: # high byte of length
             return False
 
         id = self.channel_id.to_bytes(4, byteorder="little")
@@ -218,7 +216,7 @@ class Command:
         if response_data[9] != crc(response_data, 1, 8):
             return False
 
-        if response_data[10] != 0x01:
+        if response_data[10] != 0x01: # packet type is not 0x01 = response
             return False
 
         if response_data[11] != 0xAF:
@@ -232,10 +230,10 @@ class Command:
         if response_data[14] != self.minor:
             return False
 
-        if response_data[15] != 0x00:
+        if response_data[15] != 0x00: # high byte of 'command' (self.minor)
             return False
 
-        if response_data[16] != 0x00:
+        if response_data[16] != 0x00: # result: OK(0), UNKNOWN_ERROR(1), INVALID_VALUE(2), OUT_OF_RANGE(3), NOT_AVAILABLE(4), NOT_ALLOWED(5), INVALID_GROUP(6), INVALID_ID(7), DEVICE_BUSY(8), INVALID_PIN(9), MOWER_BLOCKED(10);
             return False
 
         return True
