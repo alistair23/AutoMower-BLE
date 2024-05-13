@@ -101,7 +101,7 @@ class TestRequestMethods(unittest.TestCase):
 
         self.assertEqual(
             binascii.hexlify(command.generate_request(task=0)),
-            b"02fd14005314a513019d00af52120500040000000000d203",
+            b"02fd11005314a513015400af52120500010000ca03",
         )
 
     def test_generate_get_number_of_tasks_request(self):
