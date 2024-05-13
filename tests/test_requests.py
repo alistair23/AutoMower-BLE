@@ -97,75 +97,79 @@ class TestRequestMethods(unittest.TestCase):
         )
 
     def test_generate_get_task_request(self):
-        command = Command(0x13a51453, parameter=self.protocol['getTask'])
-        
+        command = Command(0x13A51453, parameter=self.protocol["getTask"])
+
         self.assertEqual(
             binascii.hexlify(command.generate_request(task=0)),
             b"02fd14005314a513019d00af52120500040000000000d203",
         )
-    
+
     def test_generate_get_number_of_tasks_request(self):
-        command = Command(0x13a51453, parameter=self.protocol['getNumberOfTasks'])
-        
+        command = Command(0x13A51453, parameter=self.protocol["getNumberOfTasks"])
+
         self.assertEqual(
             binascii.hexlify(command.generate_request()),
             b"02fd10005314a513016900af5212040000008b03",
         )
-        
+
     def test_generate_get_restriction_reason(self):
-        command = Command(0x13a51453, parameter=self.protocol['getRestrictionReason'])
-        
+        command = Command(0x13A51453, parameter=self.protocol["getRestrictionReason"])
+
         self.assertEqual(
             binascii.hexlify(command.generate_request()),
             b"02fd10005314a513016900af3212000000004603",
         )
-    
+
     def test_generate_get_serial_number(self):
-        command = Command(0x13a51453, parameter=self.protocol['serialNumber'])
-        
+        command = Command(0x13A51453, parameter=self.protocol["serialNumber"])
+
         self.assertEqual(
             binascii.hexlify(command.generate_request()),
             b"02fd10005314a513016900af5a120a0000003f03",
         )
-        
+
     def test_generate_is_operator_loggedin_request(self):
-        command = Command(0x13a51453, parameter=self.protocol['isOperatorLoggedIn'])
-        
+        command = Command(0x13A51453, parameter=self.protocol["isOperatorLoggedIn"])
+
         self.assertEqual(
             binascii.hexlify(command.generate_request()),
             b"02fd10005314a513016900af3812030000000103",
         )
-    
+
     def test_generate_getStartupSequenceRequiredRequest(self):
-        command = Command(0x13a51453, parameter=self.protocol['getStartupSequenceRequiredRequest'])
-        
+        command = Command(
+            0x13A51453, parameter=self.protocol["getStartupSequenceRequiredRequest"]
+        )
+
         self.assertEqual(
             binascii.hexlify(command.generate_request()),
             b"02fd10005314a513016900af5a12020000002303",
         )
-        
+
     def test_generate_keepalive_request(self):
-        command = Command(0x13a51453, parameter=self.protocol['keepalive'])
-        
+        command = Command(0x13A51453, parameter=self.protocol["keepalive"])
+
         self.assertEqual(
             binascii.hexlify(command.generate_request()),
             b"02fd10005314a513016900af421202000000d903",
         )
-        
+
     def test_generate_request_trigger_request(self):
-        command = Command(0x13a51453, parameter=self.protocol['requestTrigger'])
-        
+        command = Command(0x13A51453, parameter=self.protocol["requestTrigger"])
+
         self.assertEqual(
             binascii.hexlify(command.generate_request()),
             b"02fd10005314a513016900afea11040000006303",
         )
-        
-    def test_generate_request_override(self):    
-        command = Command(0x13a51453, parameter=self.protocol['override'])
-        
+
+    def test_generate_request_override(self):
+        command = Command(0x13A51453, parameter=self.protocol["override"])
+
         self.assertEqual(
             binascii.hexlify(command.generate_request()),
             b"02fd10005314a513016900af3212020000004103",
         )
+
+
 if __name__ == "__main__":
     unittest.main()

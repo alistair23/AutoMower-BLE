@@ -11,7 +11,14 @@ import asyncio
 import logging
 from datetime import datetime, timezone
 
-from .protocol import BLEClient, Command, MowerState, MowerActivity, ModeOfOperation, TaskInformation
+from .protocol import (
+    BLEClient,
+    Command,
+    MowerState,
+    MowerActivity,
+    ModeOfOperation,
+    TaskInformation,
+)
 from .models import MowerModels
 from .error_codes import ErrorCodes
 
@@ -59,7 +66,9 @@ class Mower(BLEClient):
         if model is None:
             return None
 
-        model_information = MowerModels.get((model["deviceType"], model["deviceSubType"]))
+        model_information = MowerModels.get(
+            (model["deviceType"], model["deviceSubType"])
+        )
         if model_information is None:
             return f"Unknown Manufacturer ({model['deviceType']}, {model['deviceSubType']})"
 
@@ -71,7 +80,9 @@ class Mower(BLEClient):
         if model is None:
             return None
 
-        model_information = MowerModels.get((model["deviceType"], model["deviceSubType"]))
+        model_information = MowerModels.get(
+            (model["deviceType"], model["deviceSubType"])
+        )
         if model_information is None:
             return f"Unknown Model ({model['deviceType']}, {model['deviceSubType']})"
 
@@ -126,7 +137,7 @@ class Mower(BLEClient):
 
     async def mower_park(self):
         await self.set_parameter("park")
-        
+
     async def get_task(self, taskid: int) -> TaskInformation | None:
         """
         Get information about a specific task
@@ -134,16 +145,17 @@ class Mower(BLEClient):
         task = await self.get_parameter("getTask", task=taskid)
         if task is None:
             return None
-        return TaskInformation(task['next_start_time'],
-                               task['duration_in_seconds'],
-                               task['on_monday'],
-                               task['on_tuesday'],
-                               task['on_wednesday'],
-                               task['on_thursday'],
-                               task['on_friday'],
-                               task['on_saturday'],
-                               task['on_sunday'],
-                               )
+        return TaskInformation(
+            task["next_start_time"],
+            task["duration_in_seconds"],
+            task["on_monday"],
+            task["on_tuesday"],
+            task["on_wednesday"],
+            task["on_thursday"],
+            task["on_friday"],
+            task["on_saturday"],
+            task["on_sunday"],
+        )
 
 
 async def main(mower: Mower):

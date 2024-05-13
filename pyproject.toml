@@ -16,5 +16,8 @@ classifiers = [
   "Programming Language :: Python :: 3",
 ]
 
+[tool.ruff]
+required-version = ">=0.4.2"
+
 [tool.setuptools.package-data]
 automower_ble = ["*.json"]

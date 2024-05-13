@@ -2,11 +2,13 @@
 A list of supported Automower models
 """
 
+
 # Copyright: Alistair Francis <alistair@alistair23.me>
 class ModelInformation:
-    def __init__(self, manufacturer:str, model:str):
+    def __init__(self, manufacturer: str, model: str):
         self.manufacturer = manufacturer
         self.model = model
+
 
 MowerModels = dict(
     [
