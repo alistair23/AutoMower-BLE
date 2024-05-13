@@ -90,7 +90,7 @@ MowerModels = dict(
         ((29, 1), ModelInformation("Gardena", "SILENO Minimo Unknown (29,1)")),
         ((29, 2), ModelInformation("Gardena", "SILENO Minimo 400")),
         ((29, 3), ModelInformation("Gardena", "SILENO Minimo 500")),
-        ((29, 4), ModelInformation("Gardena", "SILENO Minimo Unknown (29,4)")),
+        ((29, 4), ModelInformation("Gardena", "SILENO Minimo 250")),
         ((29, 5), ModelInformation("Gardena", "SILENO Minimo Unknown (29,5)")),
         ((29, 6), ModelInformation("Gardena", "SILENO Minimo Unknown (29,6)")),
         ((29, 7), ModelInformation("Gardena", "SILENO Minimo Unknown (29,7)")),
