@@ -245,5 +245,20 @@
         "minor": 6,
         "description": "Clear the override status of the mower",
         "responseType": "no_response"
+    },
+    "GetReversingDistance": {
+        "major": 4716,
+        "minor": 0,
+        "description": "Get reversing distance from charging station in mm",
+        "responseType": "uint16"
+    },
+    "SetReversingDistance": {
+        "major": 4716,
+        "minor": 1,
+        "description": "Set the reversing distance from charging station in mm. In the app, this is controlled in whole cm from 15cm to 300cm",
+        "requestType": {
+            "distance": "uint16"
+        },
+        "responseType": "no_response"
     }
 }
