@@ -205,5 +205,45 @@
         "minor": 5,
         "description": "Get the user defined mower name",
         "responseType": "ascii"
+    },
+    "GetOverride": {
+        "major": 4658,
+        "minor": 2,
+        "description": "Get the override status of the mower",
+        "responseType": {
+            "action": "uint8",
+            "startTime": "tUnixTime",
+            "duration": "uint32"
+        }
+    },
+    "SetOverrideMow": {
+        "major": 4658,
+        "minor": 3,
+        "description": "Enable override mow for the specified duration",
+        "requestType": {
+            "duration": "uint32"
+        },
+        "responseType": "no_response"
+    },
+    "SetOverridePark": {
+        "major": 4658,
+        "minor": 4,
+        "description": "Park the mower for the specified duration",
+        "requestType": {
+            "duration": "uint32"
+        },
+        "responseType": "no_response"
+    },
+    "SetOverrideParkUntilNextStart": {
+        "major": 4658,
+        "minor": 5,
+        "description": "Park until next scheduled start",
+        "responseType": "no_response"
+    },
+    "ClearOverride": {
+        "major": 4658,
+        "minor": 6,
+        "description": "Clear the override status of the mower",
+        "responseType": "no_response"
     }
 }

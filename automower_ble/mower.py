@@ -18,6 +18,7 @@ from .protocol import (
     MowerActivity,
     ModeOfOperation,
     TaskInformation,
+    OverrideAction,
 )
 from .models import MowerModels
 from .error_codes import ErrorCodes
@@ -215,7 +216,10 @@ async def main(mower: Mower):
     print("\t" + ErrorCodes(last_message["code"]).name)
 
     mower_name = await mower.get_parameter("GetUserMowerNameAsAsciiString")
-    print("Mower name:" + mower_name)
+    print("Mower name: " + mower_name)
+
+    override = await mower.get_parameter("GetOverride")
+    print("Mower override: " + str(OverrideAction(override['action'])))
 
     # print("Running for 3 hours")
     # await mower.mower_override()
