@@ -27,7 +27,7 @@ MowerModels = dict(
         ((14, 3), ModelInformation("Gardena", "SILENO City Unknown (14,3)")),
         ((14, 4), ModelInformation("Gardena", "SILENO City Unknown (14,4)")),
         ((14, 5), ModelInformation("Gardena", "SILENO City Unknown (14,5)")),
-        ((14, 6), ModelInformation("Gardena", "SILENO City Unknown (14,6)")),
+        ((14, 6), ModelInformation("Gardena", "SILENO City 500")),
         ((14, 7), ModelInformation("Gardena", "Smart SILENO City Unknown (14,7)")),
         ((14, 8), ModelInformation("Gardena", "Smart SILENO City Unknown (14,8)")),
         ((14, 9), ModelInformation("Gardena", "SILENO City Unknown (14,9)")),
