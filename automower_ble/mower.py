@@ -213,6 +213,10 @@ async def main(mower: Mower):
         )
     )
     print("\t" + ErrorCodes(last_message["code"]).name)
+
+    mower_name = await mower.get_parameter("GetUserMowerNameAsAsciiString")
+    print("Mower name:" + mower_name)
+
     # print("Running for 3 hours")
     # await mower.mower_override()
 

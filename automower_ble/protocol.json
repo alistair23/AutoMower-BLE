@@ -84,7 +84,7 @@
     "getModeOfOperation": {
         "major": 4586,
         "minor": 1,
-        "responseType":"uint8",
+        "responseType": "uint8",
         "description": "Get mode of operation"
     },
     "mowerState": {
@@ -144,7 +144,7 @@
         "responseType": "no_response",
         "description": "Main override request"
     },
-    "requestTrigger":{
+    "requestTrigger": {
         "major": 4586,
         "minor": 4,
         "responseType": "no_response",
@@ -153,7 +153,7 @@
     "keepalive": {
         "major": 4674,
         "minor": 2,
-        "responseType":"no_response",
+        "responseType": "no_response",
         "description": "Sending a keep alive to the mower"
     },
     "getStartupSequenceRequiredRequest": {
@@ -168,22 +168,22 @@
         "responseType": "bool",
         "description": "Check if the operator is logged in or not"
     },
-    "getRestrictionReason":{
+    "getRestrictionReason": {
         "major": 4658,
         "minor": 0,
-        "responseType":"uint8",
+        "responseType": "uint8",
         "description": "Get the type of reason of restriction"
     },
-    "getNumberOfTasks" : {
+    "getNumberOfTasks": {
         "major": 4690,
         "minor": 4,
-        "responseType":"uint32",
+        "responseType": "uint32",
         "description": "Get the number of tasks"
     },
     "getTask": {
         "major": 4690,
         "minor": 5,
-        "requestType":{
+        "requestType": {
             "task": "uint8"
         },
         "responseType": {
@@ -196,8 +196,14 @@
             "on_friday": "bool",
             "on_saturday": "bool",
             "on_sunday": "bool",
-            "unknown": "uint16"            
+            "unknown": "uint16"
         },
         "description": "Get a specified task"
+    },
+    "GetUserMowerNameAsAsciiString": {
+        "major": 4698,
+        "minor": 5,
+        "description": "Get the user defined mower name",
+        "responseType": "ascii"
     }
 }
