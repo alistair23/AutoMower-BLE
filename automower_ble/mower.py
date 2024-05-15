@@ -219,7 +219,7 @@ async def main(mower: Mower):
     print("Mower name: " + mower_name)
 
     override = await mower.get_parameter("GetOverride")
-    print("Mower override: " + str(OverrideAction(override['action'])))
+    print("Mower override: " + str(OverrideAction(override["action"])))
 
     # print("Running for 3 hours")
     # await mower.mower_override()

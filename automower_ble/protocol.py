@@ -48,10 +48,12 @@ class MowerActivity(Enum):
     PARKED = 5
     STOPPED_IN_GARDEN = 6  # Mower has stopped. Needs manual action to resume
 
+
 class OverrideAction(Enum):
     NONE = 0
-    FORCEDPARK = 1  
+    FORCEDPARK = 1
     FORCEDMOW = 2
+
 
 class TaskInformation(object):
     def __init__(
