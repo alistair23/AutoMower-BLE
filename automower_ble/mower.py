@@ -35,7 +35,7 @@ class Mower(BLEClient):
         """
         This is the same function as get_parameter but with a different name to make syntax a bit more clear.
         It also does not handle any response even though it upstream reads the response."""
-        self.get_parameter(parameter_name, **kwargs)
+        await self.get_parameter(parameter_name, **kwargs)
 
     async def get_parameter(self, parameter_name: str, **kwargs):
         """
@@ -204,15 +204,6 @@ async def main(mower: Mower):
     serial_number = await mower.get_parameter("serialNumber")
     print("Serial number: " + str(serial_number))
 
-    last_message = await mower.get_parameter("getMessage", messageId=0)
-    print("Last message: ")
-    print(
-        "\t"
-        + datetime.fromtimestamp(last_message["messageTime"], timezone.utc).strftime(
-            "%Y-%m-%d %H:%M:%S"
-        )
-    )
-    print("\t" + ErrorCodes(last_message["code"]).name)
     # print("Running for 3 hours")
     # await mower.mower_override()
 
@@ -222,11 +213,39 @@ async def main(mower: Mower):
     # print("Resume")
     # await mower.mower_resume()
 
-    # state = await mower.mower_state()
-    # print("Mower state: " + state)
-
     # activity = await mower.mower_activity()
     # print("Mower activity: " + activity)
+
+    # If command argument passed then send command
+    if args.command:
+        print("Sending command to control mower (" + args.command + ")")
+        match args.command:
+            case "park":
+                print("command=park")
+                cmd_result = await mower.mower_park()
+            case "pause":
+                print("command=pause")
+                cmd_result = await mower.mower_pause()
+            case "resume":
+                print("command=resume")
+                cmd_result = await mower.mower_resume()
+            case "override":
+                print("command=override")
+                cmd_result = await mower.mower_override()
+            case _:
+                print("command=??? (Unknown command: " + args.command + ")")
+        print("command result = " + str(cmd_result))
+
+## moved last message after command, this seems to cause all future commands/queries to fail
+    last_message = await mower.get_parameter("getMessage", messageId=0)
+    print("Last message: ")
+    print(
+        "\t"
+        + datetime.fromtimestamp(last_message["messageTime"], timezone.utc).strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
+    )
+    print("\t" + ErrorCodes(last_message["code"]).name)
 
     await mower.disconnect()
 
@@ -249,6 +268,14 @@ if __name__ == "__main__":
         default=None,
         help="Send PIN to authenticate. This feature is experimental and might not work.",
     )
+
+    parser.add_argument(
+        "--command",
+        metavar="<command>",
+        default=None,
+        help="Send command to control mower (one of resume, pause, park or override)",
+    )
+
     args = parser.parse_args()
 
     mower = Mower(1197489078, args.address, args.pin)
