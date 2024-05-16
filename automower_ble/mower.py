@@ -18,6 +18,7 @@ from .protocol import (
     MowerActivity,
     ModeOfOperation,
     TaskInformation,
+    RestrictionReason,
 )
 from .models import MowerModels
 from .error_codes import ErrorCodes
@@ -54,7 +55,7 @@ class Mower(BLEClient):
             return None
 
         response_dict = command.parse_response(response)
-        if ( not response_dict is None and 
+        if ( response_dict is not None and 
             len(response_dict) == 1
         ):  # If there is only one key in the response, return the value
             return response_dict["response"]

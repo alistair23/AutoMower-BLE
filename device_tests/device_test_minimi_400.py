@@ -15,10 +15,8 @@ import argparse
 import asyncio
 import logging
 
-from bleak import BleakClient, BleakScanner
-from bleak.backends.characteristic import BleakGATTCharacteristic
+from bleak import BleakScanner
 
-from datetime import datetime, timezone
 import sys
 sys.path.append('../')
 
@@ -137,9 +135,9 @@ async def main(mower:Mower, must_start:bool = False, must_stop:bool = False):
             logger.debug('--------------')
 
 
-            logger.debug(f'Overriding mow to 30 mins')
+            logger.debug('Overriding mow to 30 mins')
             await mower.set_mower_override_duration_in_seconds(30*60) # 30 minutes override mow
-            logger.debug(f'override mow finished ')
+            logger.debug('override mow finished ')
             logger.debug('--------------')
 
 
@@ -147,7 +145,7 @@ async def main(mower:Mower, must_start:bool = False, must_stop:bool = False):
             logger.debug(f'Start trigger response : {start_trigger}')
             
         if must_stop:
-            logger.debug(f'Must stop mowing. Send Park command to mower')
+            logger.debug('Must stop mowing. Send Park command to mower')
             await mower.set_mode_of_operation(ModeOfOperation.MANUAL)
             logger.debug('Finished setting mode of operation to manual. Sending park command')
             await mower.mower_park()
