@@ -236,7 +236,7 @@ async def main(mower: Mower):
                 print("command=??? (Unknown command: " + args.command + ")")
         print("command result = " + str(cmd_result))
 
-## moved last message after command, this seems to cause all future commands/queries to fail
+    # moved last message after command, this seems to cause all future commands/queries to fail
     last_message = await mower.get_parameter("getMessage", messageId=0)
     print("Last message: ")
     print(
