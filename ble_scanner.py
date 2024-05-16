@@ -1,6 +1,6 @@
 """
-    Adopted from the example provided by the Bleak library:
-    https://github.com/hbldh/bleak/blob/develop/examples/discover.py
+Adopted from the example provided by the Bleak library:
+https://github.com/hbldh/bleak/blob/develop/examples/discover.py
 """
 
 import argparse
@@ -20,10 +20,9 @@ async def main(args: argparse.Namespace):
 
     husqvarna_device_found = False
     for d, a in devices.values():
-
         # "Husqvarna AB" maps to "0x0426" for the manufacturer data
         # Please see: https://bitbucket.org/bluetooth-SIG/public/src/main/assigned_numbers/company_identifiers/company_identifiers.yaml
-        if list(a.manufacturer_data.keys())[0]== 0x0426 or args.show_all:
+        if list(a.manufacturer_data.keys())[0] == 0x0426 or args.show_all:
             if not husqvarna_device_found and not args.show_all:
                 print("Husqvarna device(s) found!")
                 husqvarna_device_found = True
@@ -35,15 +34,16 @@ async def main(args: argparse.Namespace):
                 print(f"\tManufacturer Data: {a.manufacturer_data}")
 
     if not husqvarna_device_found and not args.show_all:
-        print("No Husqvarna devices found!\nMake sure your Automower is powered on and nearby.")
+        print("No Husqvarna devices found!")
+        print("Make sure your Automower is powered on and nearby.")
+
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser()
     parser.add_argument(
-       "--macos-use-bdaddr",
-       action="store_true",
-       help="when true use Bluetooth address instead of UUID on macOS",
+        "--macos-use-bdaddr",
+        action="store_true",
+        help="when true use Bluetooth address instead of UUID on macOS",
     )
     parser.add_argument(
         "--timeout",

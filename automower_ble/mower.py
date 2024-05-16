@@ -11,7 +11,14 @@ import asyncio
 import logging
 from datetime import datetime, timezone
 
-from .protocol import BLEClient, Command, MowerState, MowerActivity, ModeOfOperation, TaskInformation, RestrictionReason
+from .protocol import (
+    BLEClient,
+    Command,
+    MowerState,
+    MowerActivity,
+    ModeOfOperation,
+    TaskInformation,
+)
 from .models import MowerModels
 from .error_codes import ErrorCodes
 
@@ -26,7 +33,7 @@ class Mower(BLEClient):
 
     async def set_parameter(self, parameter_name: str, **kwargs) -> None:
         """
-        This is the same function as get_parameter but with a differerent name to make syntax a bit more clear.
+        This is the same function as get_parameter but with a different name to make syntax a bit more clear.
         It also does not handle any response even though it upstream reads the response."""
         await self.get_parameter(parameter_name, **kwargs)
 
@@ -38,7 +45,7 @@ class Mower(BLEClient):
         command = Command(self.channel_id, self.protocol[parameter_name])
         request = command.generate_request(**kwargs)
         response = await self._request_response(request)
-        logger.debug(f'[get_parameter] response {response}')
+        
         if response is None:
             return None
 
@@ -54,14 +61,33 @@ class Mower(BLEClient):
         else:
             return response_dict
 
-    async def get_model(self) -> str | None:
-        """Get the mower model"""
-        # Todo: Change MowerModels to an enum?
+    async def get_manufacturer(self) -> str | None:
+        """Get the mower manufacturer"""
         model = await self.get_parameter("deviceType")
         if model is None:
             return None
-        else:
-            return MowerModels[(model["deviceType"], model["deviceSubType"])]
+
+        model_information = MowerModels.get(
+            (model["deviceType"], model["deviceSubType"])
+        )
+        if model_information is None:
+            return f"Unknown Manufacturer ({model['deviceType']}, {model['deviceSubType']})"
+
+        return model_information.manufacturer
+
+    async def get_model(self) -> str | None:
+        """Get the mower model"""
+        model = await self.get_parameter("deviceType")
+        if model is None:
+            return None
+
+        model_information = MowerModels.get(
+            (model["deviceType"], model["deviceSubType"])
+        )
+        if model_information is None:
+            return f"Unknown Model ({model['deviceType']}, {model['deviceSubType']})"
+
+        return model_information.model
 
     async def is_charging(self) -> bool:
         if await mower.get_parameter("isCharging"):
@@ -162,11 +188,11 @@ class Mower(BLEClient):
             return None
         return True
         
-    async def get_task(self, taskid: int, unknown:int = 0) -> TaskInformation | None:
+    async def get_task(self, taskid: int) -> TaskInformation | None:
         """
         Get information about a specific task
         """
-        task = await self.get_parameter("getTask", task=taskid, unknown=unknown)
+        task = await self.get_parameter("getTask", task=taskid)
         if task is None:
             return None
         return TaskInformation(datetime.fromtimestamp(task['next_start_time'], timezone.utc),
@@ -193,12 +219,11 @@ async def main(mower: Mower):
 
     await mower.connect(device)
 
-    try:
-        model = await mower.get_model()
-    except KeyError:
-        model = "Untested"
+    manufacturer = await mower.get_manufacturer()
+    print("Mower manufacturer: " + manufacturer)
 
-    print("Connected to: " + model)
+    model = await mower.get_model()
+    print("Mower model: " + model)
 
     charging = await mower.is_charging()
     if charging:

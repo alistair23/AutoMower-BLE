@@ -1,3 +1,16 @@
+"""
+    Example Mower = Gardena Silenio Minimo 400
+    This test is an example script that you can use to execute the code against your Mower.
+    This replays every step that has been transmitted from the mobile app towards the Mower.
+
+    I had issues with the Mower accepting my commands to start / stop / ... That's why I created this
+    so I could check against the app if everything was working or not.
+
+    This is basically a generic test to start / stop the mower.
+    But the intention is to get every feature from the Gardena app working in here (schedules,...)
+
+"""
+
 import argparse
 import asyncio
 import logging
