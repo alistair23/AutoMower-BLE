@@ -47,7 +47,8 @@ class MowerActivity(Enum):
     GOING_HOME = 4  # Mower is going home to the charging station.
     PARKED = 5
     STOPPED_IN_GARDEN = 6  # Mower has stopped. Needs manual action to resume
-    
+
+
 class RestrictionReason(Enum):
     NONE = 0
     WEEK_SCHEDULE = 1

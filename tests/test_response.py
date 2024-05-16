@@ -90,26 +90,27 @@ class TestRequestMethods(unittest.TestCase):
             decoded["duration_in_seconds"],
             12600,  # 2 = goingOut
         )
-        ti = TaskInformation(datetime.fromtimestamp(decoded['next_start_time'], timezone.utc),
-                               decoded['duration_in_seconds'],
-                               decoded['on_monday'] == 1,
-                               decoded['on_tuesday']== 1,
-                               decoded['on_wednesday']== 1,
-                               decoded['on_thursday']== 1,
-                               decoded['on_friday']== 1,
-                               decoded['on_saturday']== 1,
-                               decoded['on_sunday']== 1,
-                               )
-        self.assertEqual(decoded['on_monday'], 1)
+        ti = TaskInformation(
+            datetime.fromtimestamp(decoded["next_start_time"], timezone.utc),
+            decoded["duration_in_seconds"],
+            decoded["on_monday"] == 1,
+            decoded["on_tuesday"] == 1,
+            decoded["on_wednesday"] == 1,
+            decoded["on_thursday"] == 1,
+            decoded["on_friday"] == 1,
+            decoded["on_saturday"] == 1,
+            decoded["on_sunday"] == 1,
+        )
+        self.assertEqual(decoded["on_monday"], 1)
         self.assertTrue(ti.on_monday)
-        self.assertEqual(decoded['on_tuesday'], 0)
+        self.assertEqual(decoded["on_tuesday"], 0)
         self.assertFalse(ti.on_tuesday)
-        self.assertEqual(decoded['on_wednesday'], 1)
-        self.assertEqual(decoded['on_thursday'], 1)
-        self.assertEqual(decoded['on_friday'], 0)
-        self.assertEqual(decoded['on_saturday'], 1)
-        self.assertEqual(decoded['on_sunday'], 1)
-        
+        self.assertEqual(decoded["on_wednesday"], 1)
+        self.assertEqual(decoded["on_thursday"], 1)
+        self.assertEqual(decoded["on_friday"], 0)
+        self.assertEqual(decoded["on_saturday"], 1)
+        self.assertEqual(decoded["on_sunday"], 1)
+
     def test_decode_get_number_of_tasks_response(self):
         response = Command(0x13A51453, self.protocol["getNumberOfTasks"])
         self.assertEqual(

@@ -46,7 +46,7 @@ class Mower(BLEClient):
         command = Command(self.channel_id, self.protocol[parameter_name])
         request = command.generate_request(**kwargs)
         response = await self._request_response(request)
-        
+
         if response is None:
             return None
 
@@ -55,8 +55,8 @@ class Mower(BLEClient):
             return None
 
         response_dict = command.parse_response(response)
-        if ( response_dict is not None and 
-            len(response_dict) == 1
+        if (
+            response_dict is not None and len(response_dict) == 1
         ):  # If there is only one key in the response, return the value
             return response_dict["response"]
         else:
@@ -130,10 +130,11 @@ class Mower(BLEClient):
 
         # Set the duration of operation:
         await self.set_parameter("overrideDuration", duration=duration_hours * 3600)
-    
-    async def set_mower_override_duration_in_seconds(self, duration_in_seconds: int) -> None:
+
+    async def set_mower_override_duration_in_seconds(
+        self, duration_in_seconds: int
+    ) -> None:
         await self.set_parameter("overrideDuration", duration=duration_in_seconds)
-        
 
     async def mower_pause(self):
         await self.set_parameter("pause")
@@ -143,52 +144,52 @@ class Mower(BLEClient):
 
     async def mower_park(self):
         await self.set_parameter("park")
-    
+
     async def send_keepalive(self):
         await self.set_parameter("keepalive")
         return True
-    
+
     async def send_operator_pin_request(self, pin):
-        await self.set_parameter('pin', code=pin)
+        await self.set_parameter("pin", code=pin)
         return True
-    
-    async def get_startupsequence_required_request(self)-> bool:
-        required = await self.get_parameter('getStartupSequenceRequiredRequest')
+
+    async def get_startupsequence_required_request(self) -> bool:
+        required = await self.get_parameter("getStartupSequenceRequiredRequest")
         return required
-    
+
     async def is_operator_loggedin(self):
-        result = await self.get_parameter('isOperatorLoggedIn')
+        result = await self.get_parameter("isOperatorLoggedIn")
         return result
-    
+
     async def get_serial_number(self):
-        sn = await self.get_parameter('serialNumber')
+        sn = await self.get_parameter("serialNumber")
         return sn
-    
+
     async def get_restriction_reason(self):
-        rr = await self.get_parameter('getRestrictionReason')
+        rr = await self.get_parameter("getRestrictionReason")
         if rr is None:
             return None
         return RestrictionReason(rr)
-    
+
     async def get_number_of_tasks(self):
-        response = await self.get_parameter('getNumberOfTasks')
+        response = await self.get_parameter("getNumberOfTasks")
         return response
-    
+
     async def get_mode_of_operation(self):
-        mode_response = await self.get_parameter('getModeOfOperation')
+        mode_response = await self.get_parameter("getModeOfOperation")
         if mode_response is None:
             return None
         return ModeOfOperation(mode_response)
-    
-    async def set_mode_of_operation(self, mode:ModeOfOperation):
-        await self.set_parameter('setModeOfOperation', mode=mode.value )
-    
+
+    async def set_mode_of_operation(self, mode: ModeOfOperation):
+        await self.set_parameter("setModeOfOperation", mode=mode.value)
+
     async def start_trigger_request(self) -> None:
-        request_trigger_response = await self.get_parameter('requestTrigger')
+        request_trigger_response = await self.get_parameter("requestTrigger")
         if request_trigger_response is None:
             return None
         return True
-        
+
     async def get_task(self, taskid: int) -> TaskInformation | None:
         """
         Get information about a specific task
@@ -196,16 +197,17 @@ class Mower(BLEClient):
         task = await self.get_parameter("getTask", task=taskid)
         if task is None:
             return None
-        return TaskInformation(datetime.fromtimestamp(task['next_start_time'], timezone.utc),
-                               task['duration_in_seconds'],
-                               task['on_monday'] == 1,
-                               task['on_tuesday']== 1,
-                               task['on_wednesday']== 1,
-                               task['on_thursday']== 1,
-                               task['on_friday']== 1,
-                               task['on_saturday']== 1,
-                               task['on_sunday']== 1,
-                               )
+        return TaskInformation(
+            datetime.fromtimestamp(task["next_start_time"], timezone.utc),
+            task["duration_in_seconds"],
+            task["on_monday"] == 1,
+            task["on_tuesday"] == 1,
+            task["on_wednesday"] == 1,
+            task["on_thursday"] == 1,
+            task["on_friday"] == 1,
+            task["on_saturday"] == 1,
+            task["on_sunday"] == 1,
+        )
 
 
 async def main(mower: Mower):
