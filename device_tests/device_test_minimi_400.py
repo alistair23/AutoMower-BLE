@@ -165,11 +165,11 @@ async def main(mower:Mower, must_start:bool = False, must_stop:bool = False):
         
         
     except Exception as e:
-        logger.error(f'There was an issue communicating with the device')
+        logger.error('There was an issue communicating with the device')
         raise e
         
     finally:
-        if not device is None:
+        if device is not None:
             await mower.disconnect()
         logger.info('Disconnected from Mower')
 

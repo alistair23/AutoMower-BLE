@@ -1,8 +1,8 @@
 import unittest
 import json
 from importlib.resources import files
-from automower_ble.protocol import BLEClient, Command, ModeOfOperation, RestrictionReason
-import binascii
+from automower_ble.protocol import RestrictionReason
+
 
 class TestProtocolClasses(unittest.TestCase):
     def setUp(self):
