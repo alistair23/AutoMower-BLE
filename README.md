@@ -25,7 +25,19 @@ You can test querying data with the following
 python3 ./mower.py --address D8:B6:73:40:07:37
 ```
 
-You can uncomment parts of `async def main(mower)` to send commands.
+You can uncomment parts of `async def main(mower)` to send commands, or send commands using parameters:
+
+```shell
+python3 ./mower.py --address D8:B6:73:40:07:37 --command park
+```
+
+Where command is one of:
+  park
+  pause
+  override
+  resume
+
+(override will run for 3hrs)
 
 To get the address, the `ble_scanner.py` script can be run.
 
