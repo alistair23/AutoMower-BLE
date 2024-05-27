@@ -204,6 +204,9 @@ async def main(mower: Mower):
     serial_number = await mower.get_parameter("serialNumber")
     print("Serial number: " + str(serial_number))
 
+    mower_name = await mower.get_parameter("GetUserMowerNameAsAsciiString")
+    print("Mower name:" + mower_name)
+
     # print("Running for 3 hours")
     # await mower.mower_override()
 

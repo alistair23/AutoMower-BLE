@@ -163,7 +163,7 @@ class Command:
 
         return self.request_data
 
-    def parse_response(self, response_data: bytearray) -> int | None:
+    def parse_response(self, response_data: bytearray) -> int | str | dict | None:
         response_length = response_data[17]
         data = response_data[19 : 19 + response_length]
         response = dict()
@@ -184,6 +184,15 @@ class Command:
             elif (dtype == "uint8") or (dtype == "bool"):
                 response[name] = data[dpos]
                 dpos += 1
+            elif dtype == "ascii":
+                if len(self.response_data_type) != 1:
+                    raise ValueError(
+                        "ASCII response type can currently only be used when there is only one response type"
+                    )
+                response[name] = data.decode("ascii").rstrip(
+                    "\x00"
+                )  # Remove trailing null bytes
+                dpos += len(data)
             else:
                 raise ValueError("Unknown data type: " + dtype)
         if dpos != len(data):
