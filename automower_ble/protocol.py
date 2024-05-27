@@ -1,6 +1,6 @@
 import binascii
 from .helpers import crc
-from enum import Enum
+from enum import IntEnum
 import asyncio
 import logging
 import json
@@ -11,7 +11,7 @@ from bleak.backends.characteristic import BleakGATTCharacteristic
 logger = logging.getLogger(__name__)
 
 
-class ModeOfOperation(Enum):
+class ModeOfOperation(IntEnum):
     # ProtocolTypes$IMowerAppMowerMode, used in modeOfOperation: 4586, 1
     # Comments from: https://developer.husqvarnagroup.cloud/apis/Automower+Connect+API?tab=status%20description%20and%20error%20codes#user-content-mode
     AUTO = 0
@@ -21,7 +21,7 @@ class ModeOfOperation(Enum):
     POI = 4
 
 
-class MowerState(Enum):
+class MowerState(IntEnum):
     # ProtocolTypes$IMowerAppState, used in mowerState: 4586, 2
     # Comments from: https://developer.husqvarnagroup.cloud/apis/Automower+Connect+API?tab=status%20description%20and%20error%20codes#user-content-state
     OFF = 0  # Mower is turned off.
@@ -37,7 +37,7 @@ class MowerState(Enum):
     ERROR = 8  # An error has occurred. Check errorCode. Mower requires manual action.
 
 
-class MowerActivity(Enum):
+class MowerActivity(IntEnum):
     # ProtocolTypes$IMowerAppActivity, used in mowerActivity: 4586, 3
     # Comments from: https://developer.husqvarnagroup.cloud/apis/Automower+Connect+API?tab=status%20description%20and%20error%20codes#user-content-activity
     NONE = 0

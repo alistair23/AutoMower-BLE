@@ -1,7 +1,7 @@
-from enum import Enum
+from enum import IntEnum
 
 
-class ErrorCodes(Enum):
+class ErrorCodes(IntEnum):
     UNEXPECTED_ERROR = 0
     OUTSIDE_WORKING_AREA = 1
     NO_LOOP_SIGNAL = 2
