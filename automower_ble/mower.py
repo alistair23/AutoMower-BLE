@@ -186,10 +186,12 @@ async def main(mower: Mower):
     print("Battery is: " + str(battery_level) + "%")
 
     state = await mower.mower_state()
-    print("Mower state: " + str(state))
+    if state is not None:
+        print("Mower state: " + state.name)
 
     activity = await mower.mower_activity()
-    print("Mower activity: " + str(activity))
+    if activity is not None:
+        print("Mower activity: " + activity.name)
 
     next_start_time = await mower.mower_next_start_time()
     if next_start_time:
@@ -205,7 +207,7 @@ async def main(mower: Mower):
     print("Serial number: " + str(serial_number))
 
     mower_name = await mower.get_parameter("GetUserMowerNameAsAsciiString")
-    print("Mower name:" + mower_name)
+    print("Mower name: " + mower_name)
 
     # print("Running for 3 hours")
     # await mower.mower_override()
