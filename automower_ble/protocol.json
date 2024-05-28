@@ -1,50 +1,50 @@
 {
-    "nextStartTime": {
+    "GetNextStartTime": {
         "major": 4658,
         "minor": 1,
         "responseType": "tUnixTime",
         "description": "Next start time, if available."
     },
-    "batteryLevel": {
+    "GetBatteryLevel": {
         "major": 4106,
         "minor": 20,
         "responseType": "uint8",
         "description": "Battery level in percent."
     },
-    "isCharging": {
+    "IsCharging": {
         "major": 4106,
         "minor": 21,
         "responseType": "bool",
         "description": "Indicates if the mower is charging."
     },
-    "deviceType": {
+    "GetModel": {
         "major": 4698,
         "minor": 9,
         "responseType": {
             "deviceType": "uint8",
-            "deviceSubType": "uint8"
+            "deviceVariant": "uint8"
         },
         "description": "Device type tuple."
     },
-    "numberOfMessages": {
+    "GetNumberOfMessages": {
         "major": 4730,
         "minor": 0,
         "responseType": "uint32",
         "description": "Number of messages in the message log."
     },
-    "getMessage": {
+    "GetMessage": {
         "major": 4730,
         "minor": 1,
         "requestType": {
             "messageId": "uint32"
         },
         "responseType": {
-            "messageTime": "tUnixTime",
+            "time": "tUnixTime",
             "code": "uint32",
             "severity": "uint8"
         }
     },
-    "getStatuses": {
+    "GetAllStatistics": {
         "major": 4726,
         "minor": 0,
         "responseType": {
@@ -57,145 +57,149 @@
             "cuttingBladeUsageTime": "uint32"
         }
     },
-    "pin": {
+    "EnterOperatorPin": {
         "major": 4664,
         "minor": 4,
         "requestType": {
             "code": "uint16"
         },
-        "responseType": "no_response",
         "description": "PIN code for the mower."
     },
-    "remainingChargeTime": {
+    "GetRemainingChargingTime": {
         "major": 4106,
         "minor": 22,
         "responseType": "uint32",
         "description": "Remaining charge time."
     },
-    "setModeOfOperation": {
+    "SetMode": {
         "major": 4586,
         "minor": 0,
         "requestType": {
             "mode": "uint8"
         },
-        "responseType": "no_response",
         "description": "Set mode of operation."
     },
-    "getModeOfOperation": {
+    "GetMode": {
         "major": 4586,
         "minor": 1,
         "responseType": "uint8",
         "description": "Get mode of operation"
     },
-    "mowerState": {
+    "GetState": {
         "major": 4586,
         "minor": 2,
         "responseType": "uint8",
         "description": "Mower state."
     },
-    "mowerActivity": {
+    "GetActivity": {
         "major": 4586,
         "minor": 3,
         "responseType": "uint8",
         "description": "Mower activity."
     },
-    "resume": {
+    "StartTrigger": {
         "major": 4586,
         "minor": 4,
-        "responseType": "no_response",
-        "description": "Resume mower."
+        "description": "Unknown what this is. Resume?"
     },
-    "pause": {
+    "Pause": {
         "major": 4586,
         "minor": 5,
-        "responseType": "no_response",
         "description": "Pause mower."
     },
-    "errorCode": {
+    "GetError": {
         "major": 4586,
         "minor": 6,
         "responseType": "uint32",
         "description": "Error code."
     },
-    "overrideDuration": {
+    "SetOverrideMow": {
         "major": 4658,
         "minor": 3,
         "requestType": {
             "duration": "uint32"
         },
-        "responseType": "no_response",
-        "description": "Override duration for the specified duration in seconds."
+        "description": "Override mow for a specified duration in seconds."
     },
-    "park": {
+    "SetOverridePark": {
+        "major": 4658,
+        "minor": 4,
+        "requestType": {
+            "duration": "uint32"
+        },
+        "description": "Park mower for a specified duration in seconds."
+    },
+    "SetOverrideParkUntilNextStart": {
         "major": 4658,
         "minor": 5,
-        "responseType": "no_response",
-        "description": "Park mower."
+        "description": "Park mower until next scheduled start."
     },
-    "serialNumber": {
+    "ClearOverride": {
+        "major": 4658,
+        "minor": 6,
+        "description": "Clear the current override status."
+    },
+    "GetSerialNumber": {
         "major": 4698,
         "minor": 10,
         "responseType": "uint32",
         "description": "Serial number of the mower."
     },
-    "override": {
+    "GetOverride": {
         "major": 4658,
         "minor": 2,
-        "responseType": "no_response",
-        "description": "Main override request"
+        "responseType": {
+            "action": "uint8",
+            "startTime": "tUnixTime",
+            "duration": "uint32"
+        },
+        "description": "Override status."
     },
-    "requestTrigger": {
-        "major": 4586,
-        "minor": 4,
-        "responseType": "no_response",
-        "description": "Requesting trigger"
-    },
-    "keepalive": {
+    "KeepAlive": {
         "major": 4674,
         "minor": 2,
-        "responseType": "no_response",
         "description": "Sending a keep alive to the mower"
     },
-    "getStartupSequenceRequiredRequest": {
+    "GetStartupSequenceRequired": {
         "major": 4698,
         "minor": 2,
         "responseType": "bool",
         "description": "Request mower if startup sequence is required or not"
     },
-    "isOperatorLoggedIn": {
+    "IsOperatorLoggedIn": {
         "major": 4664,
         "minor": 3,
         "responseType": "bool",
         "description": "Check if the operator is logged in or not"
     },
-    "getRestrictionReason": {
+    "GetRestrictionReason": {
         "major": 4658,
         "minor": 0,
         "responseType": "uint8",
         "description": "Get the type of reason of restriction"
     },
-    "getNumberOfTasks": {
+    "GetNumberOfTasks": {
         "major": 4690,
         "minor": 4,
         "responseType": "uint32",
         "description": "Get the number of tasks"
     },
-    "getTask": {
+    "GetTask": {
         "major": 4690,
         "minor": 5,
         "requestType": {
-            "task": "uint8"
+            "taskId": "uint32"
         },
         "responseType": {
-            "next_start_time": "uint32",
-            "duration_in_seconds": "uint32",
-            "on_monday": "bool",
-            "on_tuesday": "bool",
-            "on_wednesday": "bool",
-            "on_thursday": "bool",
-            "on_friday": "bool",
-            "on_saturday": "bool",
-            "on_sunday": "bool",
+            "start": "uint32",
+            "duration": "uint32",
+            "useOnMonday": "bool",
+            "useOnTuesday": "bool",
+            "useOnWednesday": "bool",
+            "useOnThursday": "bool",
+            "useOnFriday": "bool",
+            "useOnSaturday": "bool",
+            "useOnSunday": "bool",
             "unknown": "uint16"
         },
         "description": "Get a specified task"

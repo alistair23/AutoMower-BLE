@@ -33,7 +33,7 @@ class TestRequestMethods(unittest.TestCase):
         )
 
     def test_generate_request_device_type(self):
-        command = Command(1739453030, parameter=self.protocol["deviceType"])
+        command = Command(1739453030, parameter=self.protocol["GetModel"])
 
         self.assertEqual(
             binascii.hexlify(command.generate_request()),
@@ -41,7 +41,7 @@ class TestRequestMethods(unittest.TestCase):
         )
 
     def test_generate_request_pin(self):
-        command = Command(1739453030, parameter=self.protocol["pin"])
+        command = Command(1739453030, parameter=self.protocol["EnterOperatorPin"])
 
         self.assertEqual(
             binascii.hexlify(command.generate_request(code=7201)),
@@ -49,7 +49,9 @@ class TestRequestMethods(unittest.TestCase):
         )
 
     def test_generate_request_remaining_charge_time(self):
-        command = Command(1197489075, parameter=self.protocol["remainingChargeTime"])
+        command = Command(
+            1197489075, parameter=self.protocol["GetRemainingChargingTime"]
+        )
 
         self.assertEqual(
             binascii.hexlify(command.generate_request()),
@@ -57,7 +59,7 @@ class TestRequestMethods(unittest.TestCase):
         )
 
     def test_generate_request_is_charging(self):
-        command = Command(1197489075, parameter=self.protocol["isCharging"])
+        command = Command(1197489075, parameter=self.protocol["IsCharging"])
 
         self.assertEqual(
             binascii.hexlify(command.generate_request()),
@@ -65,7 +67,7 @@ class TestRequestMethods(unittest.TestCase):
         )
 
     def test_generate_request_battery_level(self):
-        command = Command(1197489075, parameter=self.protocol["batteryLevel"])
+        command = Command(1197489075, parameter=self.protocol["GetBatteryLevel"])
 
         self.assertEqual(
             binascii.hexlify(command.generate_request()),
@@ -73,7 +75,7 @@ class TestRequestMethods(unittest.TestCase):
         )
 
     def test_generate_request_set_mode_of_operation(self):
-        command = Command(0x5798CA1A, parameter=self.protocol["setModeOfOperation"])
+        command = Command(0x5798CA1A, parameter=self.protocol["SetMode"])
 
         self.assertEqual(
             binascii.hexlify(command.generate_request(mode=ModeOfOperation.AUTO.value)),
@@ -81,7 +83,7 @@ class TestRequestMethods(unittest.TestCase):
         )
 
     def test_generate_request_get_mode_of_operation(self):
-        command = Command(0x5798CA1A, parameter=self.protocol["getModeOfOperation"])
+        command = Command(0x5798CA1A, parameter=self.protocol["GetMode"])
 
         self.assertEqual(
             binascii.hexlify(command.generate_request()),
@@ -89,7 +91,7 @@ class TestRequestMethods(unittest.TestCase):
         )
 
     def test_generate_request_override_duration(self):
-        command = Command(0x5798CA1A, parameter=self.protocol["overrideDuration"])
+        command = Command(0x5798CA1A, parameter=self.protocol["SetOverrideMow"])
 
         self.assertEqual(
             binascii.hexlify(command.generate_request(duration=3 * 3600)),
@@ -97,15 +99,15 @@ class TestRequestMethods(unittest.TestCase):
         )
 
     def test_generate_get_task_request(self):
-        command = Command(0x13A51453, parameter=self.protocol["getTask"])
+        command = Command(0x13A51453, parameter=self.protocol["GetTask"])
 
         self.assertEqual(
-            binascii.hexlify(command.generate_request(task=0)),
-            b"02fd11005314a513015400af52120500010000ca03",
+            binascii.hexlify(command.generate_request(taskId=0)),
+            b"02fd14005314a513019d00af52120500040000000000d203",
         )
 
     def test_generate_get_number_of_tasks_request(self):
-        command = Command(0x13A51453, parameter=self.protocol["getNumberOfTasks"])
+        command = Command(0x13A51453, parameter=self.protocol["GetNumberOfTasks"])
 
         self.assertEqual(
             binascii.hexlify(command.generate_request()),
@@ -113,7 +115,7 @@ class TestRequestMethods(unittest.TestCase):
         )
 
     def test_generate_get_restriction_reason(self):
-        command = Command(0x13A51453, parameter=self.protocol["getRestrictionReason"])
+        command = Command(0x13A51453, parameter=self.protocol["GetRestrictionReason"])
 
         self.assertEqual(
             binascii.hexlify(command.generate_request()),
@@ -121,7 +123,7 @@ class TestRequestMethods(unittest.TestCase):
         )
 
     def test_generate_get_serial_number(self):
-        command = Command(0x13A51453, parameter=self.protocol["serialNumber"])
+        command = Command(0x13A51453, parameter=self.protocol["GetSerialNumber"])
 
         self.assertEqual(
             binascii.hexlify(command.generate_request()),
@@ -129,7 +131,7 @@ class TestRequestMethods(unittest.TestCase):
         )
 
     def test_generate_is_operator_loggedin_request(self):
-        command = Command(0x13A51453, parameter=self.protocol["isOperatorLoggedIn"])
+        command = Command(0x13A51453, parameter=self.protocol["IsOperatorLoggedIn"])
 
         self.assertEqual(
             binascii.hexlify(command.generate_request()),
@@ -138,7 +140,7 @@ class TestRequestMethods(unittest.TestCase):
 
     def test_generate_getStartupSequenceRequiredRequest(self):
         command = Command(
-            0x13A51453, parameter=self.protocol["getStartupSequenceRequiredRequest"]
+            0x13A51453, parameter=self.protocol["GetStartupSequenceRequired"]
         )
 
         self.assertEqual(
@@ -147,7 +149,7 @@ class TestRequestMethods(unittest.TestCase):
         )
 
     def test_generate_keepalive_request(self):
-        command = Command(0x13A51453, parameter=self.protocol["keepalive"])
+        command = Command(0x13A51453, parameter=self.protocol["KeepAlive"])
 
         self.assertEqual(
             binascii.hexlify(command.generate_request()),
@@ -155,7 +157,7 @@ class TestRequestMethods(unittest.TestCase):
         )
 
     def test_generate_request_trigger_request(self):
-        command = Command(0x13A51453, parameter=self.protocol["requestTrigger"])
+        command = Command(0x13A51453, parameter=self.protocol["StartTrigger"])
 
         self.assertEqual(
             binascii.hexlify(command.generate_request()),
@@ -163,7 +165,7 @@ class TestRequestMethods(unittest.TestCase):
         )
 
     def test_generate_request_override(self):
-        command = Command(0x13A51453, parameter=self.protocol["override"])
+        command = Command(0x13A51453, parameter=self.protocol["GetOverride"])
 
         self.assertEqual(
             binascii.hexlify(command.generate_request()),

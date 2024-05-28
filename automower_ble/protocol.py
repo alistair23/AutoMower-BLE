@@ -49,6 +49,12 @@ class MowerActivity(IntEnum):
     STOPPED_IN_GARDEN = 6  # Mower has stopped. Needs manual action to resume
 
 
+class OverrideAction(IntEnum):
+    NONE = 0
+    FORCEDPARK = 1
+    FORCEDMOW = 2
+
+
 class TaskInformation(object):
     def __init__(
         self,
@@ -84,6 +90,9 @@ class Command:
             self.request_data_type = parameter["requestType"]
         else:
             self.request_data_type = None
+
+        if "responseType" not in parameter:
+            parameter["responseType"] = "no_response"
 
         if not isinstance(parameter["responseType"], dict):  # Always wrap in list
             self.response_data_type = {"response": parameter["responseType"]}
@@ -433,7 +442,7 @@ class BLEClient:
         ### TODO: Check response
 
         if self.pin is not None:
-            command = Command(self.channel_id, self.protocol["pin"])
+            command = Command(self.channel_id, self.protocol["EnterOperatorPin"])
             request = command.generate_request(code=self.pin)
             response = await self._request_response(request)
             if response is None:

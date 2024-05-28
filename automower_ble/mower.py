@@ -31,18 +31,12 @@ class Mower(BLEClient):
     def __init__(self, channel_id: int, address, pin=None):
         super().__init__(channel_id, address, pin)
 
-    async def set_parameter(self, parameter_name: str, **kwargs) -> None:
+    async def command(self, command_name: str, **kwargs):
         """
-        This is the same function as get_parameter but with a different name to make syntax a bit more clear.
-        It also does not handle any response even though it upstream reads the response."""
-        await self.get_parameter(parameter_name, **kwargs)
-
-    async def get_parameter(self, parameter_name: str, **kwargs):
+        This function is used to simplify the communication of the mower using the commands found in protocol.json.
+        It will send a request to the mower and then wait for a response. The response will be parsed and returned to the caller.
         """
-        This function is used to get a parameter from the mower. It will send a request to the mower and then
-        wait for a response. The response will be parsed and returned to the caller.
-        """
-        command = Command(self.channel_id, self.protocol[parameter_name])
+        command = Command(self.channel_id, self.protocol[command_name])
         request = command.generate_request(**kwargs)
         response = await self._request_response(request)
         if response is None:
@@ -63,59 +57,59 @@ class Mower(BLEClient):
 
     async def get_manufacturer(self) -> str | None:
         """Get the mower manufacturer"""
-        model = await self.get_parameter("deviceType")
+        model = await self.command("GetModel")
         if model is None:
             return None
 
         model_information = MowerModels.get(
-            (model["deviceType"], model["deviceSubType"])
+            (model["deviceType"], model["deviceVariant"])
         )
         if model_information is None:
-            return f"Unknown Manufacturer ({model['deviceType']}, {model['deviceSubType']})"
+            return f"Unknown Manufacturer ({model['deviceType']}, {model['deviceVariant']})"
 
         return model_information.manufacturer
 
     async def get_model(self) -> str | None:
         """Get the mower model"""
-        model = await self.get_parameter("deviceType")
+        model = await self.command("GetModel")
         if model is None:
             return None
 
         model_information = MowerModels.get(
-            (model["deviceType"], model["deviceSubType"])
+            (model["deviceType"], model["deviceVariant"])
         )
         if model_information is None:
-            return f"Unknown Model ({model['deviceType']}, {model['deviceSubType']})"
+            return f"Unknown Model ({model['deviceType']}, {model['deviceVariant']})"
 
         return model_information.model
 
     async def is_charging(self) -> bool:
-        if await mower.get_parameter("isCharging"):
+        if await mower.command("IsCharging"):
             return True
         else:
             return False
 
     async def battery_level(self) -> int | None:
         """Query the mower battery level"""
-        return await self.get_parameter("batteryLevel")
+        return await self.command("GetBatteryLevel")
 
     async def mower_state(self) -> MowerState | None:
         """Query the mower state"""
-        state = await self.get_parameter("mowerState")
+        state = await self.command("GetState")
         if state is None:
             return None
         return MowerState(state)
 
     async def mower_next_start_time(self) -> datetime | None:
         """Query the mower next start time"""
-        next_start_time = await self.get_parameter("nextStartTime")
+        next_start_time = await self.command("GetNextStartTime")
         if next_start_time is None or next_start_time == 0:
             return None
         return datetime.fromtimestamp(next_start_time, timezone.utc)
 
     async def mower_activity(self) -> MowerActivity | None:
         """Query the mower activity"""
-        activity = await self.get_parameter("mowerActivity")
+        activity = await self.command("GetActivity")
         if activity is None:
             return None
         return MowerActivity(activity)
@@ -125,37 +119,37 @@ class Mower(BLEClient):
         Force the mower to run for the specified duration in hours.
         """
         # Set mode of operation to manual:
-        await self.set_parameter("setModeOfOperation", mode=ModeOfOperation.MANUAL)
+        await self.command("SetMode", mode=ModeOfOperation.MANUAL)
 
         # Set the duration of operation:
-        await self.set_parameter("overrideDuration", duration=duration_hours * 3600)
+        await self.command("SetOverrideMow", duration=duration_hours * 3600)
 
     async def mower_pause(self):
-        await self.set_parameter("pause")
+        await self.command("Pause")
 
     async def mower_resume(self):
-        await self.set_parameter("resume")
+        await self.command("StartTrigger")
 
     async def mower_park(self):
-        await self.set_parameter("park")
+        await self.command("SetOverrideParkUntilNextStart")
 
     async def get_task(self, taskid: int) -> TaskInformation | None:
         """
         Get information about a specific task
         """
-        task = await self.get_parameter("getTask", task=taskid)
+        task = await self.command("GetTask", taskId=taskid)
         if task is None:
             return None
         return TaskInformation(
-            task["next_start_time"],
-            task["duration_in_seconds"],
-            task["on_monday"],
-            task["on_tuesday"],
-            task["on_wednesday"],
-            task["on_thursday"],
-            task["on_friday"],
-            task["on_saturday"],
-            task["on_sunday"],
+            task["start"],
+            task["duration"],
+            task["useOnMonday"],
+            task["useOnTuesday"],
+            task["useOnWednesday"],
+            task["useOnThursday"],
+            task["useOnFriday"],
+            task["useOnSaturday"],
+            task["useOnSunday"],
         )
 
 
@@ -200,14 +194,14 @@ async def main(mower: Mower):
     else:
         print("No next start time")
 
-    statuses = await mower.get_parameter("getStatuses")
+    statuses = await mower.command("GetAllStatistics")
     for status, value in statuses.items():
         print(status, value)
 
-    serial_number = await mower.get_parameter("serialNumber")
+    serial_number = await mower.command("GetSerialNumber")
     print("Serial number: " + str(serial_number))
 
-    mower_name = await mower.get_parameter("GetUserMowerNameAsAsciiString")
+    mower_name = await mower.command("GetUserMowerNameAsAsciiString")
     print("Mower name: " + mower_name)
 
     # print("Running for 3 hours")
@@ -243,11 +237,11 @@ async def main(mower: Mower):
         print("command result = " + str(cmd_result))
 
     # moved last message after command, this seems to cause all future commands/queries to fail
-    last_message = await mower.get_parameter("getMessage", messageId=0)
+    last_message = await mower.command("GetMessage", messageId=0)
     print("Last message: ")
     print(
         "\t"
-        + datetime.fromtimestamp(last_message["messageTime"], timezone.utc).strftime(
+        + datetime.fromtimestamp(last_message["time"], timezone.utc).strftime(
             "%Y-%m-%d %H:%M:%S"
         )
     )
