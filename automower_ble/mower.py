@@ -49,12 +49,13 @@ class Mower(BLEClient):
             return None
 
         if command.validate_response(response) is False:
-            logger.error("Response failed validation")
-            return None
+            # Just log if the response is invalid as this has been seen with user
+            # logs from official apps. I.e. it is somewhat expected.
+            logger.debug("Response failed validation")
 
         response_dict = command.parse_response(response)
         if (
-            len(response_dict) == 1
+            response_dict is not None and len(response_dict) == 1
         ):  # If there is only one key in the response, return the value
             return response_dict["response"]
         else:
