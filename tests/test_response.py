@@ -11,13 +11,13 @@ class TestRequestMethods(unittest.TestCase):
             self.protocol = json.load(f)  # Load the parameters to have them available
 
     def test_decode_response_device_type(self):
-        command = Command(1197489078, parameter=self.protocol["deviceType"])
+        command = Command(1197489078, parameter=self.protocol["GetModel"])
 
         response = command.parse_response(
             bytearray.fromhex("02fd1300b63b604701e601af5a1209000002001701c803")
         )
         self.assertEqual(
-            MowerModels[(response["deviceType"], response["deviceSubType"])].model,
+            MowerModels[(response["deviceType"], response["deviceVariant"])].model,
             "Automower 305",
         )
 
@@ -25,12 +25,12 @@ class TestRequestMethods(unittest.TestCase):
             bytearray.fromhex("02fd130038e38f0b01dc01af5a1209000002000c005903")
         )
         self.assertEqual(
-            MowerModels[(response["deviceType"], response["deviceSubType"])].model,
+            MowerModels[(response["deviceType"], response["deviceVariant"])].model,
             "Automower 315",
         )
 
     def test_decode_response_is_charging(self):
-        command = Command(1197489078, self.protocol["isCharging"])
+        command = Command(1197489078, self.protocol["IsCharging"])
 
         self.assertEqual(
             command.parse_response(
@@ -46,7 +46,7 @@ class TestRequestMethods(unittest.TestCase):
         )
 
     def test_decode_response_mower_state(self):
-        command = Command(1197489078, self.protocol["mowerState"])
+        command = Command(1197489078, self.protocol["GetState"])
 
         self.assertNotIn(
             command.parse_response(
@@ -55,7 +55,7 @@ class TestRequestMethods(unittest.TestCase):
             [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14],  # 11=unknown
         )
 
-        command = Command(876143061, self.protocol["mowerState"])
+        command = Command(876143061, self.protocol["GetState"])
         self.assertEqual(
             command.parse_response(
                 bytearray.fromhex("02fd1200d5e13834012301afea110200000100033a03")
@@ -64,7 +64,7 @@ class TestRequestMethods(unittest.TestCase):
         )
 
     def test_decode_response_mower_activity(self):
-        response = Command(1197489078, self.protocol["mowerActivity"])
+        response = Command(1197489078, self.protocol["GetActivity"])
 
         self.assertEqual(
             response.parse_response(
@@ -74,7 +74,7 @@ class TestRequestMethods(unittest.TestCase):
         )
 
     def test_decode_get_task_response(self):
-        response = Command(1197489078, self.protocol["getTask"])
+        response = Command(1197489078, self.protocol["GetTask"])
         decoded = response.parse_response(
             bytearray.fromhex(
                 "02fd240025be246a010701af5212050000130000e1000038310000010001010001013003"
@@ -82,23 +82,23 @@ class TestRequestMethods(unittest.TestCase):
         )
 
         self.assertEqual(
-            decoded["next_start_time"],
+            decoded["start"],
             57600,
         )
         self.assertEqual(
-            decoded["duration_in_seconds"],
-            12600,  # 2 = goingOut
+            decoded["duration"],
+            12600,
         )
-        self.assertEqual(decoded["on_monday"], 1)
-        self.assertEqual(decoded["on_tuesday"], 0)
-        self.assertEqual(decoded["on_wednesday"], 1)
-        self.assertEqual(decoded["on_thursday"], 1)
-        self.assertEqual(decoded["on_friday"], 0)
-        self.assertEqual(decoded["on_saturday"], 1)
-        self.assertEqual(decoded["on_sunday"], 1)
+        self.assertEqual(decoded["useOnMonday"], 1)
+        self.assertEqual(decoded["useOnTuesday"], 0)
+        self.assertEqual(decoded["useOnWednesday"], 1)
+        self.assertEqual(decoded["useOnThursday"], 1)
+        self.assertEqual(decoded["useOnFriday"], 0)
+        self.assertEqual(decoded["useOnSaturday"], 1)
+        self.assertEqual(decoded["useOnSunday"], 1)
 
     def test_decode_get_number_of_tasks_response(self):
-        response = Command(0x13A51453, self.protocol["getNumberOfTasks"])
+        response = Command(0x13A51453, self.protocol["GetNumberOfTasks"])
         self.assertEqual(
             response.parse_response(
                 bytearray.fromhex("02fd150025be246a012e01af52120400000400010000004f03")
