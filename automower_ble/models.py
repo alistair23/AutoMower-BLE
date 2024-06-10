@@ -65,7 +65,7 @@ MowerModels = dict(
         ((19, 1), ModelInformation("Husqvarna", "Automower 115H")),
         ((20, 0), ModelInformation("Husqvarna", "Automower 435X AWD")),
         ((21, 0), ModelInformation("Husqvarna", "Automower 535 AWD")),
-        ((22, 1), ModelInformation("McCulloch", "Rob Unknown (22,1)")),
+        ((22, 1), ModelInformation("McCulloch", "Rob S400")),
         ((22, 2), ModelInformation("McCulloch", "Rob Unknown (22,2)")),
         ((22, 3), ModelInformation("McCulloch", "Rob Unknown (22,3)")),
         ((22, 4), ModelInformation("McCulloch", "Rob S800")),
