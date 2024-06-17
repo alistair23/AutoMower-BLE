@@ -45,7 +45,7 @@ class Mower(BLEClient):
         if command.validate_response(response) is False:
             # Just log if the response is invalid as this has been seen with user
             # logs from official apps. I.e. it is somewhat expected.
-            logger.debug("Response failed validation")
+            logger.warning("Response failed validation")
 
         response_dict = command.parse_response(response)
         if (
@@ -124,10 +124,14 @@ class Mower(BLEClient):
         # Set the duration of operation:
         await self.command("SetOverrideMow", duration=duration_hours * 3600)
 
+        # Request trigger to start, the response validation is expected to fail
+        await self.command("StartTrigger")
+
     async def mower_pause(self):
         await self.command("Pause")
 
     async def mower_resume(self):
+        # The response validation is expected to fail
         await self.command("StartTrigger")
 
     async def mower_park(self):
