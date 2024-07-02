@@ -114,15 +114,18 @@ class Mower(BLEClient):
             return None
         return MowerActivity(activity)
 
-    async def mower_override(self, duration_hours: int = 3) -> None:
+    async def mower_override(self, duration_hours: float = 3.0) -> None:
         """
         Force the mower to run for the specified duration in hours.
         """
-        # Set mode of operation to manual:
-        await self.command("SetMode", mode=ModeOfOperation.MANUAL)
+        if duration_hours <= 0:
+            raise ValueError("Duration must be greater than 0")
+
+        # Set mode of operation to auto:
+        await self.command("SetMode", mode=ModeOfOperation.AUTO)
 
         # Set the duration of operation:
-        await self.command("SetOverrideMow", duration=duration_hours * 3600)
+        await self.command("SetOverrideMow", duration=int(duration_hours * 3600))
 
         # Request trigger to start, the response validation is expected to fail
         await self.command("StartTrigger")
