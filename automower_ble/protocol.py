@@ -455,10 +455,6 @@ class BLEClient:
         return self.client.is_connected
 
     async def probe_gatts(self, device):
-        if device is None:
-            logger.error("could not find device with address '%s'", self.address)
-            return False
-
         logger.info("connecting to device...")
         client = BleakClient(
             device, services=["98bd0001-0b0e-421a-84e5-ddbf75dc6de4"], use_cached=True
