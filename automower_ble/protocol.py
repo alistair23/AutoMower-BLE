@@ -316,7 +316,7 @@ class BLEClient:
 
         logger.debug("Waiting for %d bytes", length)
 
-        while len(data) != length:
+        while len(data) < length:
             try:
                 data = data + await asyncio.wait_for(self.queue.get(), timeout=5)
             except TimeoutError:
@@ -325,6 +325,7 @@ class BLEClient:
                     + str(binascii.hexlify(data)),
                     self.address,
                 )
+                logger.error("Expecting %d bytes, only have %d", length, len(data))
                 return None
 
         logger.info("Final response: " + str(binascii.hexlify(data)))
