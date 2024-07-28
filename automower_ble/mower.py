@@ -140,6 +140,9 @@ class Mower(BLEClient):
     async def mower_park(self):
         await self.command("SetOverrideParkUntilNextStart")
 
+        # Request trigger to start, the response validation is expected to fail
+        await self.command("StartTrigger")
+
     async def get_task(self, taskid: int) -> TaskInformation | None:
         """
         Get information about a specific task
