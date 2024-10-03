@@ -45,7 +45,7 @@ MowerModels = dict(
         ((16, 1), ModelInformation("Husqvarna", "Automower 550H")),
         ((17, 0), ModelInformation("Husqvarna", "Automower 520")),
         ((17, 1), ModelInformation("Husqvarna", "Automower 520H")),
-        ((18, 1), ModelInformation("Gardena", "SILENO Life Unknown (18,1)")),
+        ((18, 1), ModelInformation("Gardena", "SILENO Life 750")),
         ((18, 2), ModelInformation("Gardena", "SILENO Life Unknown (18,2)")),
         ((18, 3), ModelInformation("Gardena", "SILENO Life Unknown (18,3)")),
         ((18, 4), ModelInformation("Gardena", "Smart SILENO Life Unknown (18,4)")),
