@@ -16,6 +16,9 @@ classifiers = [
   "Programming Language :: Python :: 3",
   "License :: OSI Approved :: MIT License",
 ]
+dependencies = [
+    "bleak",
+]
 
 [tool.ruff]
 required-version = ">=0.4.2"
