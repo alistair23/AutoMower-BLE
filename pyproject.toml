@@ -7,7 +7,7 @@ name = "automower_ble"
 version = "0.2.0"
 description = "An unofficial reverse engineered Husqvarna Automower Connect BLE library"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 authors     = [
     {name = "Alistair Francis", email = "alistair@alistair23.me"}
 ]
@@ -15,6 +15,9 @@ classifiers = [
   "Environment :: Console",
   "Programming Language :: Python :: 3",
   "License :: OSI Approved :: MIT License",
+]
+dependencies = [
+  "bleak",
 ]
 
 [tool.ruff]
