@@ -281,8 +281,15 @@ class BLEClient:
 
         except TimeoutError:
             logger.error("Unable to get response from device: '%s'", self.address)
-            if self.is_connected():
-                await self.disconnect()
+
+            value = await self.client.read_gatt_char(self.read_char.uuid)
+            logger.debug(
+                "  [Characteristic] %s (%s), Value: %r",
+                self.read_char,
+                ",".join(self.read_char.properties),
+                value,
+            )
+
             return None
 
         return data
@@ -356,8 +363,6 @@ class BLEClient:
 
         if i == 0:
             logger.error("Unable to communicate with device: '%s'", self.address)
-            if self.is_connected():
-                await self.disconnect()
             return None
 
         return response_data
@@ -428,6 +433,7 @@ class BLEClient:
 
         await asyncio.sleep(5.0)
 
+        logger.info("Setting channel ID")
         request = self.generate_request_setup_channel_id()
         response = await self._request_response(request)
         if response is None:
@@ -435,6 +441,7 @@ class BLEClient:
 
         ### TODO: Check response
 
+        logger.info("Generating request handshake")
         request = self.generate_request_handshake()
         response = await self._request_response(request)
         if response is None:
