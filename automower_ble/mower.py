@@ -84,7 +84,8 @@ class Mower(BLEClient):
         return model_information.model
 
     async def is_charging(self) -> bool:
-        if await mower.command("IsCharging"):
+        """Get the mower charging status"""
+        if await self.command("IsCharging"):
             return True
         else:
             return False
