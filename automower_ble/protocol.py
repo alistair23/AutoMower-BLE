@@ -497,14 +497,14 @@ class BLEClient:
                     )
 
                 if char.uuid == "00002a00-0000-1000-8000-00805f9b34fb":
-                    model = await client.read_gatt_char(char)
+                    model = (await client.read_gatt_char(char)).decode()
 
                 if char.uuid == "98bd0004-0b0e-421a-84e5-ddbf75dc6de4":
-                    device_type = await client.read_gatt_char(char)
+                    device_type = (await client.read_gatt_char(char)).decode()
 
         await client.disconnect()
 
-        return (manufacture, device_type.decode(), model.decode())
+        return (manufacture, device_type, model)
 
     async def disconnect(self):
         """
