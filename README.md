@@ -22,13 +22,13 @@ Please note that the library is under active development and that the code on gi
 You can test querying data with the following
 
 ```shell
-python3 ./mower.py --address D8:B6:73:40:07:37
+python3 ./control.py --address D8:B6:73:40:07:37
 ```
 
 You can uncomment parts of `async def main(mower)` to send commands, or send commands using parameters:
 
 ```shell
-python3 ./mower.py --address D8:B6:73:40:07:37 --command park
+python3 ./control.py --address D8:B6:73:40:07:37 --command park
 ```
 
 Where command is one of:
@@ -39,7 +39,11 @@ Where command is one of:
 
 (override will run for 3hrs)
 
-To get the address, the `ble_scanner.py` script can be run.
+To get the address, the `discover.py` script can be run:
+
+```sh
+python discover.py
+```
 
 ## Unit testing for developers
 
