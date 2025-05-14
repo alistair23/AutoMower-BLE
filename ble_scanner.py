@@ -8,6 +8,9 @@ import asyncio
 
 from bleak import BleakScanner
 
+# "Husqvarna AB" maps to "0x0426" for the manufacturer data
+# Please see: https://bitbucket.org/bluetooth-SIG/public/src/main/assigned_numbers/company_identifiers/company_identifiers.yaml
+HUSQVARNA_COMPANY_IDENTIFIER = 0x0426
 
 async def main(args: argparse.Namespace):
     print(f"Scanning for {args.timeout} seconds, please wait...")
@@ -20,14 +23,12 @@ async def main(args: argparse.Namespace):
 
     husqvarna_device_found = False
     for d, a in devices.values():
-        # "Husqvarna AB" maps to "0x0426" for the manufacturer data
-        # Please see: https://bitbucket.org/bluetooth-SIG/public/src/main/assigned_numbers/company_identifiers/company_identifiers.yaml
-        if list(a.manufacturer_data.keys())[0] == 0x0426 or args.show_all:
+        if args.show_all or next(iter(a.manufacturer_data.keys()), None) == HUSQVARNA_COMPANY_IDENTIFIER:
             if not husqvarna_device_found and not args.show_all:
                 print("Husqvarna device(s) found!")
                 husqvarna_device_found = True
 
-            print(f"\nAddress: {d.address}")
+            print(f"\n\tAddress: {d.address}")
             print(f"\tName: {d.name}")
             print(f"\tSignal Strength: {a.rssi} dBm (closer to 0 is stronger)")
             if args.show_all:
