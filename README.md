@@ -39,7 +39,11 @@ Where command is one of:
 
 (override will run for 3hrs)
 
-To get the address, the `ble_scanner.py` script can be run.
+To get the address, the `discover.py` script can be run:
+
+```sh
+python discover.py
+```
 
 ## Unit testing for developers
 
