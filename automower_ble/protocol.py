@@ -1,5 +1,5 @@
 import binascii
-from .helpers import crc
+from automower_ble.helpers import crc
 from enum import IntEnum
 import asyncio
 import logging

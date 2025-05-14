@@ -11,7 +11,7 @@ import asyncio
 import logging
 from datetime import datetime, timezone
 
-from .protocol import (
+from automower_ble.protocol import (
     BLEClient,
     Command,
     MowerState,
@@ -19,8 +19,8 @@ from .protocol import (
     ModeOfOperation,
     TaskInformation,
 )
-from .models import MowerModels
-from .error_codes import ErrorCodes
+from automower_ble.models import MowerModels
+from automower_ble.error_codes import ErrorCodes
 
 from bleak import BleakScanner
 
