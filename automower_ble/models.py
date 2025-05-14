@@ -23,7 +23,7 @@ MowerModels = dict(
         ((12, 1), ModelInformation("Husqvarna", "Automower 315X")),
         ((12, 23), ModelInformation("Husqvarna", "Automower 315X Limited Edition")),
         ((14, 1), ModelInformation("Gardena", "SILENO City 250")),
-        ((14, 2), ModelInformation("Gardena", "SILENO City Unknown (14,2)")),
+        ((14, 2), ModelInformation("Gardena", "SILENO City 300")),
         ((14, 3), ModelInformation("Gardena", "SILENO City Unknown (14,3)")),
         ((14, 4), ModelInformation("Gardena", "SILENO City Unknown (14,4)")),
         ((14, 5), ModelInformation("Gardena", "SILENO City Unknown (14,5)")),
