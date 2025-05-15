@@ -15,7 +15,6 @@ This library can be installed by
 ```shell
 pip3 install automower-ble
 ```
-
 Please note that the library is under active development and that the code on github might not be released for pip.
 
 ## Testing Connections
@@ -23,13 +22,13 @@ Please note that the library is under active development and that the code on gi
 You can test querying data with the following
 
 ```shell
-python ./automower_ble/mower.py --address D8:B6:73:40:07:37
+python3 ./automower_ble/mower.py --address D8:B6:73:40:07:37
 ```
 
 You can uncomment parts of `async def main(mower)` to send commands, or send commands using parameters:
 
 ```shell
-python ./automower_ble/mower.py --address D8:B6:73:40:07:37 --command park
+python3 ./automower_ble/mower.py --address D8:B6:73:40:07:37 --command park
 ```
 
 Where command is one of:
@@ -51,6 +50,7 @@ You can run the unit tests with [pytest](https://docs.pytest.org). Install it by
 ```shell
 pytest
 ```
+
 
 ## Debugging logs on an Android phone
 
