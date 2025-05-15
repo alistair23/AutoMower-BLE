@@ -11,7 +11,7 @@ Details on how this was developed are available at: https://www.alistair23.me/20
 This was developed and tested against a Automower 305, but it should work on all Automowers. If you are able to test on different models please do and report any results back.
 
 ## Installation
-This library can be installed by
+This library can be installed by 
 ```shell
 pip3 install automower-ble
 ```
@@ -22,13 +22,13 @@ Please note that the library is under active development and that the code on gi
 You can test querying data with the following
 
 ```shell
-python3 ./automower_ble/mower.py --address D8:B6:73:40:07:37
+python3 ./mower.py --address D8:B6:73:40:07:37
 ```
 
 You can uncomment parts of `async def main(mower)` to send commands, or send commands using parameters:
 
 ```shell
-python3 ./automower_ble/mower.py --address D8:B6:73:40:07:37 --command park
+python3 ./mower.py --address D8:B6:73:40:07:37 --command park
 ```
 
 Where command is one of:
