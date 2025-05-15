@@ -11,11 +11,9 @@ Details on how this was developed are available at: https://www.alistair23.me/20
 This was developed and tested against a Automower 305, but it should work on all Automowers. If you are able to test on different models please do and report any results back.
 
 ## Installation
-
 This library can be installed by
-
 ```shell
-pip install automower-ble
+pip3 install automower-ble
 ```
 
 Please note that the library is under active development and that the code on github might not be released for pip.
@@ -48,7 +46,7 @@ To get the address, the `ble_scanner.py` script can be run.
 
 Unit tests are found in the /tests/ folder.
 
-You can run the unit tests with [pytest](https://docs.pytest.org). Install it by `pip install pytest`. In the root path, just run
+You can run the unit tests with [pytest](https://docs.pytest.org). Install it by `pip3 install pytest`. In the root path, just run
 
 ```shell
 pytest
