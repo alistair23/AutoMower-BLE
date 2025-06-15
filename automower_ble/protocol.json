@@ -17,6 +17,20 @@
         "responseType": "uint32",
         "description": "Remaining charge time."
     },
+    "GetCuttingHeight": {
+        "major": 4422,
+        "minor": 2,
+        "responseType": "uint8",
+        "description": "Cutting height, in centimeters."
+    },
+    "SetCuttingHeight": {
+        "major": 4422,
+        "minor": 3,
+        "requestType": {
+            "height": "uint8"
+        },
+        "description": "Cutting height, from 1 to 9 centimeters."
+    },
     "SetMode": {
         "major": 4586,
         "minor": 0,
@@ -126,6 +140,20 @@
         "minor": 2,
         "description": "Sending a keep alive to the mower"
     },
+    "GetTime": {
+        "major": 4690,
+        "minor": 2,
+        "responseType": "uint32",
+        "description": "Get timestamp for the current time in seconds since 1970-01-01T00:00:00 in local time"
+    },
+    "SetTime": {
+        "major": 4690,
+        "minor": 3,
+        "requestType": {
+            "time": "uint32"
+        },
+        "description": "Set timestamp for the current time in seconds since 1970-01-01T00:00:00 in local time"
+    },
     "GetNumberOfTasks": {
         "major": 4690,
         "minor": 4,
@@ -151,6 +179,39 @@
             "unknown": "uint16"
         },
         "description": "Get a specified task"
+    },
+    "AddTask": {
+        "major": 4690,
+        "minor": 7,
+        "requestType": {
+            "start": "uint32",
+            "duration": "uint16",
+            "useOnSunday": "bool",
+            "unknown_1": "uint8",
+            "useOnMonday": "bool",
+            "useOnTuesday": "bool",
+            "useOnWednesday": "bool",
+            "useOnThursday": "bool",
+            "useOnFriday": "bool",
+            "useOnSaturday": "bool",
+            "unknown_2": "uint8"
+        },
+        "description": "Add a new task during a task transaction"
+    },
+    "DeleteAllTask": {
+        "major": 4690,
+        "minor": 9,
+        "description": "Delete all task during a task transaction"
+    },
+    "StartTaskTransaction": {
+        "major": 4690,
+        "minor": 10,
+        "description": "Start a task transaction request"
+    },
+    "CommitTaskTransaction": {
+        "major": 4690,
+        "minor": 11,
+        "description": "Commit a task transaction request"
     },
     "GetStartupSequenceRequired": {
         "major": 4698,
