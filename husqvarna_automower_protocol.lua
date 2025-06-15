@@ -70,24 +70,7 @@ do
 		min = tvb(14, 1):uint()
 
 		subtree:add_le(automower_request_major, tvb(12,2))
-		if maj == 0x3212 then -- PlannerCommands 4658
-			subtree:add(automower_request_major_text, "PlannerCommands")
-			if min == 0x00 then
-				minorText = "getRestrictionReasonRequest"
-			elseif min == 0x01 then
-				minorText = "getNextStartTimeRequest"
-			elseif min == 0x02 then
-				minorText = "getOverrideRequest"
-			elseif min == 0x03 then
-				minorText = "setOverrideMowRequest"
-			elseif min == 0x04 then
-				minorText = "setOverrideParkRequest"
-			elseif min == 0x05 then
-				minorText = "setOverrideParkUntilNextStartRequest"
-			elseif min == 0x06 then
-				minorText = "clearOverrideRequest"
-			end
-		elseif maj == 0x0A10 then -- BatteryCommands 4106
+		if maj == 0x0A10 then -- BatteryCommands 4106
 			subtree:add(automower_request_major_text, "BatteryCommands")
 			if min == 0x00 then
 				minorText = "getCapacityRequest"
@@ -131,6 +114,59 @@ do
 				minorText = "pauseRequest"
 			elseif min == 0x06 then
 				minorText = "getErrorRequest"
+			end
+		elseif maj == 0x3212 then -- PlannerCommands 4658
+			subtree:add(automower_request_major_text, "PlannerCommands")
+			if min == 0x00 then
+				minorText = "getRestrictionReasonRequest"
+			elseif min == 0x01 then
+				minorText = "getNextStartTimeRequest"
+			elseif min == 0x02 then
+				minorText = "getOverrideRequest"
+			elseif min == 0x03 then
+				minorText = "setOverrideMowRequest"
+			elseif min == 0x04 then
+				minorText = "setOverrideParkRequest"
+			elseif min == 0x05 then
+				minorText = "setOverrideParkUntilNextStartRequest"
+			elseif min == 0x06 then
+				minorText = "clearOverrideRequest"
+			end
+		elseif maj == 0x3812 then -- AuthenticationCommands 4664
+			subtree:add(automower_request_major_text, "AuthenticationCommands")
+			if min == 0x00 then
+				minorText = "getLoginLevelRequest"
+			elseif min == 0x01 then
+				minorText = "isBlockedRequest"
+			elseif min == 0x02 then
+				minorText = "getBlockedTimeRequest"
+			elseif min == 0x03 then
+				minorText = "isOperatorLoggedInRequest"
+			elseif min == 0x04 then
+				minorText = "enterOperatorPinRequest"
+			elseif min == 0x05 then
+				minorText = "setOperatorPinRequest"
+			elseif min == 0x08 then
+				minorText = "isTrustedToEnterSafetyPinRequest"
+			elseif min == 0x0A then
+				minorText = "initiateAuthenticationV2Request"
+			elseif min == 0x0B then
+				minorText = "challengeResponseV2Request"
+			elseif min == 0x0E then
+				minorText= "getSecurityCodeV2Request"
+			elseif min == 0x0F then
+				minorText = "logoutRequest"
+			elseif min == 0x11 then
+				minorText = "subscribeAllEventsRequest"
+			end
+		elseif maj == 0x4212 then -- SystemPowerCommands 4674
+			subtree:add(automower_request_major_text, "SystemPowerCommands")
+			if min == 0x00 then
+				minorText = "enableEventsRequest"
+			elseif min == 0x01 then
+				minorText = "getPowerModeRequest"
+			elseif min == 0x02 then
+				minorText = "keepAliveRequest"
 			end
 		elseif maj == 0x5212 then -- CalendarCommands 4690
 			subtree:add(automower_request_major_text, "CalendarCommands")
@@ -190,47 +226,6 @@ do
 			elseif min == 0x16 then
 				minorText = "getSwPackageVersionStringRequest"
 			end
-		elseif maj == 0x4212 then -- SystemPowerCommands 4674
-			subtree:add(automower_request_major_text, "SystemPowerCommands")
-			if min == 0x00 then
-				minorText = "enableEventsRequest"
-			elseif min == 0x01 then
-				minorText = "getPowerModeRequest"
-			elseif min == 0x02 then
-				minorText = "keepAliveRequest"
-			end
-		elseif maj == 0x3812 then -- AuthenticationCommands 4664
-			subtree:add(automower_request_major_text, "AuthenticationCommands")
-			if min == 0x00 then
-				minorText = "getLoginLevelRequest"
-			elseif min == 0x01 then
-				minorText = "isBlockedRequest"
-			elseif min == 0x02 then
-				minorText = "getBlockedTimeRequest"
-			elseif min == 0x03 then
-				minorText = "isOperatorLoggedInRequest"
-			elseif min == 0x04 then
-				minorText = "enterOperatorPinRequest"
-			elseif min == 0x05 then
-				minorText = "setOperatorPinRequest"
-			elseif min == 0x08 then
-				minorText = "isTrustedToEnterSafetyPinRequest"
-			elseif min == 0x0A then
-				minorText = "initiateAuthenticationV2Request"
-			elseif min == 0x0B then
-				minorText = "challengeResponseV2Request"
-			elseif min == 0x0E then
-				minorText= "getSecurityCodeV2Request"
-			elseif min == 0x0F then
-				minorText = "logoutRequest"
-			elseif min == 0x11 then
-				minorText = "subscribeAllEventsRequest"
-			end
-		elseif maj == 0x0414 then -- AuthenticationCommands 5124
-			subtree:add(automower_request_major_text, "AuthenticationCommands")
-			if min == 0x0A then
-				minorText = "getRemainingLoginAttemptsRequest"
-			end
 		elseif maj == 0x6612 then -- SpotCuttingCommands 4710
 			subtree:add(automower_request_major_text, "SpotCuttingCommands")
 			if min == 0x00 then
@@ -255,6 +250,11 @@ do
 				minorText = "getStatusRequest"
 			elseif min == 0x0A then
 				minorText = "subscribeAllEventsRequest"
+			end
+		elseif maj == 0x0414 then -- AuthenticationCommands 5124
+			subtree:add(automower_request_major_text, "AuthenticationCommands")
+			if min == 0x0A then
+				minorText = "getRemainingLoginAttemptsRequest"
 			end
 		elseif maj == 0x8C16 then -- SpotcuttingCommands 5772
 			subtree:add(automower_request_major_text, "SpotCuttingCommands")
