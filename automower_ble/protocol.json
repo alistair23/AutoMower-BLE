@@ -140,15 +140,16 @@
         },
         "responseType": {
             "start": "uint32",
-            "duration": "uint32",
+            "duration": "uint16",
+            "useOnSunday": "bool",
+            "unknown_1": "uint8",
             "useOnMonday": "bool",
             "useOnTuesday": "bool",
             "useOnWednesday": "bool",
             "useOnThursday": "bool",
             "useOnFriday": "bool",
             "useOnSaturday": "bool",
-            "useOnSunday": "bool",
-            "unknown": "uint16"
+            "unknown_2": "uint8"
         },
         "description": "Get a specified task"
     },
