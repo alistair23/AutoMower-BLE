@@ -36,7 +36,7 @@ class Mower(BLEClient):
         This function is used to simplify the communication of the mower using the commands found in protocol.json.
         It will send a request to the mower and then wait for a response. The response will be parsed and returned to the caller.
         """
-        command = Command(self.channel_id, self.protocol[command_name])
+        command = Command(self.channel_id, (await self.get_protocol())[command_name])
         request = command.generate_request(**kwargs)
         response = await self._request_response(request)
         if response is None:

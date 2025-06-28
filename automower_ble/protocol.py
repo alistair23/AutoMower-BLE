@@ -272,8 +272,19 @@ class BLEClient:
 
         self.queue = asyncio.Queue()
 
-        with files("automower_ble").joinpath("protocol.json").open("r") as f:
-            self.protocol = json.load(f)  # Load the JSON file
+        self.protocol = None
+
+    async def get_protocol(self):
+        if self.protocol is None:
+
+            def read_protocol_file():
+                with files("automower_ble").joinpath("protocol.json").open("r") as f:
+                    return json.load(f)
+
+            self.protocol = await asyncio.get_running_loop().run_in_executor(
+                None, read_protocol_file
+            )
+        return self.protocol
 
     async def _get_response(self):
         try:
@@ -443,7 +454,9 @@ class BLEClient:
         ### TODO: Check response
 
         if self.pin is not None:
-            command = Command(self.channel_id, self.protocol["EnterOperatorPin"])
+            command = Command(
+                self.channel_id, (await self.get_protocol())["EnterOperatorPin"]
+            )
             request = command.generate_request(code=self.pin)
             response = await self._request_response(request)
             if response is None:
