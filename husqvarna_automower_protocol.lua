@@ -15,7 +15,7 @@ do
 	automower_full_crc = ProtoField.new("Full CRC", "automower.full_crc", ftypes.UINT8, nil, base.HEX)
 	automower_footer = ProtoField.new("Footer", "automower.footer", ftypes.UINT8, nil, base.HEX)
 
-	automower_request.fields = { automower_data, automower_header, automower_length, automower_channel_id, automower_bool, automower_first_crc, 
+	automower_request.fields = { automower_data, automower_header, automower_length, automower_channel_id, automower_bool, automower_first_crc,
 			automower_request_major, automower_request_major_text, automower_request_minor,automower_request_minor_text,
 			automower_request_data, automower_full_crc, automower_footer }
 
@@ -70,8 +70,8 @@ do
 		min = tvb(14, 1):uint()
 
 		subtree:add_le(automower_request_major, tvb(12,2))
-		if tvb(12, 2):uint() == 0x3212 then -- PlannerCommands
-			subtree:add(automower_request_major_text,  "PlannerCommands")
+		if maj == 0x3212 then -- PlannerCommands 4658
+			subtree:add(automower_request_major_text, "PlannerCommands")
 			if min == 0x00 then
 				minorText = "getRestrictionReasonRequest"
 			elseif min == 0x01 then
@@ -87,8 +87,8 @@ do
 			elseif min == 0x06 then
 				minorText = "clearOverrideRequest"
 			end
-		elseif tvb(12, 2):uint() == 0x0A10 then -- BatteryCommands
-			subtree:add(automower_request_major_text,  "BatteryCommands")
+		elseif maj == 0x0A10 then -- BatteryCommands 4106
+			subtree:add(automower_request_major_text, "BatteryCommands")
 			if min == 0x00 then
 				minorText = "getCapacityRequest"
 			elseif min == 0x01 then
@@ -115,9 +115,8 @@ do
 			elseif min == 0x0A then
 				minorText = "getBatteryNbrChargingCyclesRequest"
 			end
-		elseif tvb(12, 2):uint() == 0xEA11 then -- MowerAppCommands 4586
-			subtree:add(automower_request_major_text,  "MowerAppCommands")	
-			
+		elseif maj == 0xEA11 then -- MowerAppCommands 4586
+			subtree:add(automower_request_major_text, "MowerAppCommands")
 			if  min == 0x0 then
 				minorText = "modeOfOperation"
 			elseif min == 0x01 then
@@ -129,18 +128,18 @@ do
 			elseif min == 0x04 then
 				minorText = "startTriggerRequest"
 			elseif min == 0x05 then
-				minorText = "pauzeRequest"
+				minorText = "pauseRequest"
 			elseif min == 0x06 then
 				minorText = "getErrorRequest"
 			end
-		elseif tvb(12, 2):uint() == 0x5212 then -- CalendarCommands	
-			subtree:add(automower_request_major_text,  "CalendarCommands")
+		elseif maj == 0x5212 then -- CalendarCommands 4690
+			subtree:add(automower_request_major_text, "CalendarCommands")
 			if min == 0x00 then
 				minorText = "subscribeAllEventsRequest"
 			elseif min == 0x01 then
 				minorText = "subscribeEventChannelRequest"
 			elseif min == 0x02 then
-				minorText = "GetTimeRequest"
+				minorText = "getTimeRequest"
 			elseif min == 0x03 then
 				minorText = "setTimeRequest"
 			elseif min == 0x04 then
@@ -160,8 +159,8 @@ do
 			elseif min == 0x0B then
 				minorText = "commitTaskTransactionRequest"
 			end
-		elseif maj == 0x5A12 then -- SystemCommands
-			subtree:add(automower_request_major_text,  "SystemCommands")
+		elseif maj == 0x5A12 then -- SystemCommands 4698
+			subtree:add(automower_request_major_text, "SystemCommands")
 			if min == 0x0 then
 				minorText = "ClearStartupSequenceRequiredRequest"
 			elseif min == 0x01 then
@@ -184,23 +183,23 @@ do
 				minorText = "getModelRequest"
 			elseif min == 0x0A then
 				minorText = "getSerialNumberRequest"
-			elseif min == 0x16 then
-				minorText = "getSwPackageVersionStringRequest"
 			elseif min == 0x0C then
 				minorText = "getConfigVersionStringRequest"
 			elseif min == 0x0E then
 				minorText = "getProductionTimeRequest"
+			elseif min == 0x16 then
+				minorText = "getSwPackageVersionStringRequest"
 			end
-		elseif maj == 0x4212 then -- SystemPowerCommands
+		elseif maj == 0x4212 then -- SystemPowerCommands 4674
 			subtree:add(automower_request_major_text, "SystemPowerCommands")
 			if min == 0x00 then
-				minorText = "EnableEventsRequeest/Response"
+				minorText = "enableEventsRequest"
 			elseif min == 0x01 then
 				minorText = "getPowerModeRequest"
 			elseif min == 0x02 then
 				minorText = "keepAliveRequest"
 			end
-		elseif maj == 0x3812 then -- AuthenticationCommands	
+		elseif maj == 0x3812 then -- AuthenticationCommands 4664
 			subtree:add(automower_request_major_text, "AuthenticationCommands")
 			if min == 0x00 then
 				minorText = "getLoginLevelRequest"
@@ -227,13 +226,13 @@ do
 			elseif min == 0x11 then
 				minorText = "subscribeAllEventsRequest"
 			end
-		elseif maj == 0x0414 then -- AuthenticationCommands
-			subtree:add(automower_request_major_text,  "AuthenticationCommands")
+		elseif maj == 0x0414 then -- AuthenticationCommands 5124
+			subtree:add(automower_request_major_text, "AuthenticationCommands")
 			if min == 0x0A then
 				minorText = "getRemainingLoginAttemptsRequest"
 			end
-		elseif maj == 0x6612 then -- SpotcuttingCommands
-			subtree:add(automower_request_major_text,  "SpotCuttingCommands")
+		elseif maj == 0x6612 then -- SpotCuttingCommands 4710
+			subtree:add(automower_request_major_text, "SpotCuttingCommands")
 			if min == 0x00 then
 				minorText = "getAvailableRequest"
 			elseif min == 0x01 then
@@ -248,17 +247,17 @@ do
 				minorText = "getAllSettingsRequest"
 			elseif min == 0x06 then
 				minorText = "setAvailableRequest"
-			elseif min == 0x07 then 
+			elseif min == 0x07 then
 				minorText = "startTriggerRequest"
-			elseif min == 0x08 then 
+			elseif min == 0x08 then
 				minorText = "abortRequest"
-			elseif min == 0x09 then 
+			elseif min == 0x09 then
 				minorText = "getStatusRequest"
-			elseif min == 0x0A then 
+			elseif min == 0x0A then
 				minorText = "subscribeAllEventsRequest"
 			end
-		elseif maj == 0x8c16 then -- SpotcuttingCommands
-			subtree:add(automower_request_major_text,  "SpotCuttingCommands")
+		elseif maj == 0x8C16 then -- SpotcuttingCommands 5772
+			subtree:add(automower_request_major_text, "SpotCuttingCommands")
 			if min == 0x00 then
 				minorText = "getStateRequest"
 			elseif min == 0x01 then
@@ -282,10 +281,10 @@ do
 			elseif min == 0x0A then
 				minorText = "getAutoTrigIntensityRequest"
 			end
-		else 
+		else
 			subtree:add(automower_request_major_text,  "NotImplementedYet")
 		end
- 		
+
 		subtree:add_le(automower_request_minor, tvb(14,1))
 		if minorText ~= "" then
 			subtree:add(automower_request_minor_text, minorText)
