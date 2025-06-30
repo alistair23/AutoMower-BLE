@@ -55,6 +55,20 @@ class OverrideAction(IntEnum):
     FORCEDMOW = 2
 
 
+class ResponseResult(IntEnum):
+    OK = 0
+    UNKNOWN_ERROR = 1
+    INVALID_VALUE = 2
+    OUT_OF_RANGE = 3
+    NOT_AVAILABLE = 4
+    NOT_ALLOWED = 5
+    INVALID_GROUP = 6
+    INVALID_ID = 7
+    DEVICE_BUSY = 8
+    INVALID_PIN = 9
+    MOWER_BLOCKED = 10
+
+
 class TaskInformation(object):
     def __init__(
         self,
@@ -258,9 +272,18 @@ class Command:
         if (
             response_data[16] != 0x00
         ):  # result: OK(0), UNKNOWN_ERROR(1), INVALID_VALUE(2), OUT_OF_RANGE(3), NOT_AVAILABLE(4), NOT_ALLOWED(5), INVALID_GROUP(6), INVALID_ID(7), DEVICE_BUSY(8), INVALID_PIN(9), MOWER_BLOCKED(10);
+            logger.warning("Non zero response result: {d}", response_data[16])
             return False
 
         return True
+
+    def get_response_result(self, response_data: bytearray) -> ResponseResult:
+        if self.validate_response(response_data) is False:
+            # Just log if the response is invalid as this has been seen with user
+            # logs from official apps. I.e. it is somewhat expected.
+            logger.warning("Response failed validation")
+
+        return MowerState(response_data[16])
 
 
 class BLEClient:
@@ -373,17 +396,17 @@ class BLEClient:
 
         return response_data
 
-    async def connect(self, device) -> bool:
+    async def connect(self, device) -> ResponseResult:
         """
         Connect to a device and setup the channel
 
-        Returns True on success
+        Returns a ResponseResult
         """
         logger.info("starting scan...")
 
         if device is None:
             logger.error("could not find device with address '%s'", self.address)
-            return False
+            return ResponseResult.UNKNOWN_ERROR
 
         logger.info("connecting to device...")
         self.client = BleakClient(
@@ -442,16 +465,18 @@ class BLEClient:
         request = self.generate_request_setup_channel_id()
         response = await self._request_response(request)
         if response is None:
-            return False
-
-        ### TODO: Check response
+            return ResponseResult.UNKNOWN_ERROR
+        response_result = self.get_response_result(response)
+        if response_result != ResponseResult.OK:
+            return response_result
 
         request = self.generate_request_handshake()
         response = await self._request_response(request)
         if response is None:
-            return False
-
-        ### TODO: Check response
+            return ResponseResult.UNKNOWN_ERROR
+        response_result = self.get_response_result(response)
+        if response_result != ResponseResult.OK:
+            return response_result
 
         if self.pin is not None:
             command = Command(
@@ -460,9 +485,10 @@ class BLEClient:
             request = command.generate_request(code=self.pin)
             response = await self._request_response(request)
             if response is None:
-                return False
+                return ResponseResult.UNKNOWN_ERROR
+            return self.get_response_result(response)
 
-        return True
+        return ResponseResult.OK
 
     def is_connected(self) -> bool:
         return self.client.is_connected
