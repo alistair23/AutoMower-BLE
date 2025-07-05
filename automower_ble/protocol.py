@@ -272,6 +272,7 @@ class BLEClient:
 
         self.queue = asyncio.Queue()
 
+        self.client = None
         self.protocol = None
 
     async def get_protocol(self):
@@ -465,7 +466,7 @@ class BLEClient:
         return True
 
     def is_connected(self) -> bool:
-        return self.client.is_connected
+        return self.client and self.client.is_connected
 
     async def probe_gatts(self, device):
         logger.info("connecting to device...")
