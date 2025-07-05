@@ -232,6 +232,7 @@ class BLEClient:
         self.pin = pin
         self.MTU_SIZE = 20
 
+        self.lock = asyncio.Lock()
         self.queue = asyncio.Queue()
 
         self.client = None
@@ -308,25 +309,26 @@ class BLEClient:
 
     async def _request_response(self, request_data):
         i = 5
-        while i > 0:
-            try:
-                # If there are previous responses, flush them out
-                while not self.queue.empty():
-                    await self.queue.get()
+        async with self.lock:
+            while i > 0:
+                try:
+                    # If there are previous responses, flush them out
+                    while not self.queue.empty():
+                        await self.queue.get()
 
-                await self._write_data(request_data)
+                    await self._write_data(request_data)
 
-                response_data = await self._read_data()
-                if response_data is None:
+                    response_data = await self._read_data()
+                    if response_data is None:
+                        i = i - 1
+                        continue
+
+                except asyncio.exceptions.CancelledError:
+                    logger.debug("Received CancelledError")
                     i = i - 1
                     continue
 
-            except asyncio.exceptions.CancelledError:
-                logger.debug("Received CancelledError")
-                i = i - 1
-                continue
-
-            break
+                break
 
         if i == 0:
             logger.error("Unable to communicate with device: '%s'", self.address)
