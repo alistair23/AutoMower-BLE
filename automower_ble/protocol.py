@@ -441,6 +441,11 @@ class BLEClient:
                             ",".join(char.properties),
                             e,
                         )
+                        if (
+                            char.uuid == "98bd0002-0b0e-421a-84e5-ddbf75dc6de4"
+                            or char.uuid == "98bd0003-0b0e-421a-84e5-ddbf75dc6de4"
+                        ):
+                            return ResponseResult.NOT_ALLOWED
 
                 else:
                     logger.debug(
