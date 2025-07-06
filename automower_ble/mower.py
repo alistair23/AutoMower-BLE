@@ -42,7 +42,7 @@ class Mower(BLEClient):
         if response is None:
             return None
 
-        if command.validate_response(response) is False:
+        if self.validate_response(response) is False:
             # Just log if the response is invalid as this has been seen with user
             # logs from official apps. I.e. it is somewhat expected.
             logger.warning("Response failed validation")
