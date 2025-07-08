@@ -165,11 +165,11 @@ class Command:
                 elif request_type == "uint16":
                     request_length += 2
                     request_data += kwargs[request_name].to_bytes(2, byteorder="little")
-                elif request_type == "uint8":
+                elif request_type in ["uint8", "bool"]:
                     request_length += 1
                     request_data += kwargs[request_name].to_bytes(1, byteorder="little")
                 else:
-                    raise ValueError("Unknown request type: " + self.request_type)
+                    raise ValueError("Unknown request type: " + request_type)
         self.request_data[16] = request_length
 
         self.request_data[17] = 0x00  # high byte of request_length
