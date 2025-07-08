@@ -410,17 +410,11 @@ class BLEClient:
         response = await self._request_response(request)
         if response is None:
             return ResponseResult.UNKNOWN_ERROR
-        response_result = self.get_response_result(response)
-        if response_result != ResponseResult.OK:
-            return response_result
 
         request = self.generate_request_handshake()
         response = await self._request_response(request)
         if response is None:
             return ResponseResult.UNKNOWN_ERROR
-        response_result = self.get_response_result(response)
-        if response_result != ResponseResult.OK:
-            return response_result
 
         if self.pin is not None:
             command = Command(
