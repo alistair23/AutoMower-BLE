@@ -169,7 +169,7 @@ class Command:
                     request_length += 1
                     request_data += kwargs[request_name].to_bytes(1, byteorder="little")
                 else:
-                    raise ValueError("Unknown request type: " + self.request_type)
+                    raise ValueError("Unknown request type: " + request_type)
         self.request_data[16] = request_length
 
         self.request_data[17] = 0x00  # high byte of request_length
@@ -186,10 +186,10 @@ class Command:
 
         return self.request_data
 
-    def parse_response(self, response_data: bytearray) -> int | str | dict | None:
+    def parse_response(self, response_data: bytearray) -> dict[str, int | str] | None:
         response_length = response_data[17]
         data = response_data[19 : 19 + response_length]
-        response = dict()
+        response: dict[str, int | str] = dict()
         dpos = 0  # data position
         for name, dtype in self.response_data_type.items():
             if dtype == "no_response":
@@ -286,9 +286,9 @@ class BLEClient:
         self.MTU_SIZE = 20
 
         self.lock = asyncio.Lock()
-        self.queue = asyncio.Queue()
+        self.queue: asyncio.Queue[bytearray] = asyncio.Queue()
 
-        self.client = None
+        self.client: BleakClient | None = None
         self.protocol = None
 
     async def get_protocol(self):
@@ -414,7 +414,9 @@ class BLEClient:
         await self.client.pair()
         logger.info("paired")
 
-        self.client._backend._mtu_size = self.MTU_SIZE
+        # This is not safe, _mtu_size is not defined in BaseBleakClient but may
+        # be defined in subclasses.
+        self.client._backend._mtu_size = self.MTU_SIZE  # type: ignore[attr-defined]
 
         for service in self.client.services:
             logger.info("[Service] %s", service)
@@ -485,7 +487,7 @@ class BLEClient:
         return ResponseResult.OK
 
     def is_connected(self) -> bool:
-        return self.client and self.client.is_connected
+        return bool(self.client and self.client.is_connected)
 
     async def probe_gatts(self, device):
         logger.info("connecting to device...")

@@ -212,10 +212,10 @@ async def main(mower: Mower):
     await mower.connect(device)
 
     manufacturer = await mower.get_manufacturer()
-    print("Mower manufacturer: " + manufacturer)
+    print("Mower manufacturer: " + (manufacturer or "Unknown manufacturer"))
 
     model = await mower.get_model()
-    print("Mower model: " + model)
+    print("Mower model: " + (model or "Unknown model"))
 
     charging = await mower.is_charging()
     if charging:
@@ -277,7 +277,7 @@ async def main(mower: Mower):
                 cmd_result = await mower.mower_resume()
             case "override":
                 print("command=override")
-                cmd_result = await mower.mower_override()
+                cmd_result = await mower.mower_override()  # type: ignore[func-returns-value]
             case _:
                 print("command=??? (Unknown command: " + args.command + ")")
         print("command result = " + str(cmd_result))
