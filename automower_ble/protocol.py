@@ -641,4 +641,4 @@ class BLEClient:
             # logs from official apps. I.e. it is somewhat expected.
             logger.warning("Response failed validation")
 
-        return MowerState(response_data[16])
+        return ResponseResult(response_data[16])
