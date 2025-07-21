@@ -3,7 +3,7 @@ name: Ruff formater
 on:
   push:
     branches:
-      - master
+      - main
   pull_request: ~
 
 jobs:
