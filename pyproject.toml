@@ -139,8 +139,6 @@ ignore = [
   # Temporarily disabled rules
   "A001",    # Variable is shadowing a builtin
   "BLE001",  # Do not catch blind exception
-  "C406",    # Unnecessary list literal
-  "C408",    # Unnecessary dict call
   "E501",    # Line too long
   "G003",    # Logging statement uses +
   "G004",    # Logging statement uses f-string
