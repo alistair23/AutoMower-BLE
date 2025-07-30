@@ -8,8 +8,8 @@ how the request and response classes can be used.
 
 import argparse
 import asyncio
+import datetime as dt
 import logging
-from datetime import datetime, timezone
 
 from automower_ble.protocol import (
     BLEClient,
@@ -136,12 +136,12 @@ class Mower(BLEClient):
             return None
         return MowerState(state)
 
-    async def mower_next_start_time(self) -> datetime | None:
+    async def mower_next_start_time(self) -> dt.datetime | None:
         """Query the mower next start time"""
         next_start_time = await self.command("GetNextStartTime")
         if next_start_time is None or next_start_time == 0:
             return None
-        return datetime.fromtimestamp(next_start_time, timezone.utc)
+        return dt.datetime.fromtimestamp(next_start_time, dt.UTC)
 
     async def mower_activity(self) -> MowerActivity | None:
         """Query the mower activity"""
@@ -287,7 +287,7 @@ async def main(mower: Mower):
     print("Last message: ")
     print(
         "\t"
-        + datetime.fromtimestamp(last_message["time"], timezone.utc).strftime(
+        + dt.datetime.fromtimestamp(last_message["time"], dt.UTC).strftime(
             "%Y-%m-%d %H:%M:%S"
         )
     )

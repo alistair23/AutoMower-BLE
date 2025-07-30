@@ -150,7 +150,4 @@ ignore = [
   "SIM103",  # Return the condition
   "SIM401",  # if-else-block-instead-of-dict-get
   "SLF001",  # Private member accessed
-  "UP004",   # Class inherits from object
-  "UP017",   # Use datetime.UTC alias
-  "UP031",   # Use format specifiers instead of percent format
 ]
