@@ -19,7 +19,7 @@ async def main(args: argparse.Namespace):
     devices = await BleakScanner.discover(
         timeout=args.timeout,
         return_adv=True,
-        cb=dict(use_bdaddr=args.macos_use_bdaddr),
+        cb={"use_bdaddr": args.macos_use_bdaddr},
     )
 
     husqvarna_device_found = False

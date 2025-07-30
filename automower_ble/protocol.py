@@ -189,7 +189,7 @@ class Command:
     def parse_response(self, response_data: bytearray) -> dict[str, int | str] | None:
         response_length = response_data[17]
         data = response_data[19 : 19 + response_length]
-        response: dict[str, int | str] = dict()
+        response: dict[str, int | str] = {}
         dpos = 0  # data position
         for name, dtype in self.response_data_type.items():
             if dtype == "no_response":
