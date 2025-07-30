@@ -69,7 +69,7 @@ class ResponseResult(IntEnum):
     MOWER_BLOCKED = 10
 
 
-class TaskInformation(object):
+class TaskInformation:
     def __init__(
         self,
         next_start_time,
@@ -219,9 +219,7 @@ class Command:
             else:
                 raise ValueError("Unknown data type: " + dtype)
         if dpos != len(data):
-            raise ValueError(
-                "Data length mismatch. Read %d bytes of %d" % (dpos, len(data))
-            )
+            raise ValueError(f"Data length mismatch. Read {dpos} bytes of {len(data)}")
         return response
 
     def validate_command_response(self, response_data: bytearray) -> bool:
