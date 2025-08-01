@@ -119,11 +119,7 @@ class Command:
         self.request_data[3] = 0x00  # Length, high byte, updated later
 
         # ChannelID
-        id = self.channel_id.to_bytes(4, byteorder="little")
-        self.request_data[4] = id[0]
-        self.request_data[5] = id[1]
-        self.request_data[6] = id[2]
-        self.request_data[7] = id[3]
+        self.request_data[4:8] = self.channel_id.to_bytes(4, byteorder="little")
 
         self.request_data[8] = 0x01  # is_linked (usually 0x01)
 
@@ -229,14 +225,7 @@ class Command:
         if response_data[3] != 0x00:  # high byte of length
             return False
 
-        id = self.channel_id.to_bytes(4, byteorder="little")
-        if response_data[4] != id[0]:
-            return False
-        if response_data[5] != id[1]:
-            return False
-        if response_data[6] != id[2]:
-            return False
-        if response_data[7] != id[3]:
+        if response_data[4:8] != self.channel_id.to_bytes(4, byteorder="little"):
             return False
 
         if response_data[8] != 0x01:
@@ -557,11 +546,7 @@ class BLEClient:
         data = bytearray.fromhex("02fd160000000000002e1400000000000000004d61696e00")
 
         # New ChannelID
-        id = self.channel_id.to_bytes(4, byteorder="little")
-        data[11] = id[0]
-        data[12] = id[1]
-        data[13] = id[2]
-        data[14] = id[3]
+        data[11:15] = self.channel_id.to_bytes(4, byteorder="little")
 
         # CRC and end byte
         data[9] = crc(data, 1, 8)
@@ -577,11 +562,7 @@ class BLEClient:
         """
         data = bytearray.fromhex("02fd0a000000000000d00801")
 
-        id = self.channel_id.to_bytes(4, byteorder="little")
-        data[4] = id[0]
-        data[5] = id[1]
-        data[6] = id[2]
-        data[7] = id[3]
+        data[4:8] = self.channel_id.to_bytes(4, byteorder="little")
 
         # CRCs and end byte
         data[9] = crc(data, 1, 8)
@@ -600,14 +581,7 @@ class BLEClient:
         if response_data[3] != 0x00:  # high byte of length
             return False
 
-        id = self.channel_id.to_bytes(4, byteorder="little")
-        if response_data[4] != id[0]:
-            return False
-        if response_data[5] != id[1]:
-            return False
-        if response_data[6] != id[2]:
-            return False
-        if response_data[7] != id[3]:
+        if response_data[4:8] != self.channel_id.to_bytes(4, byteorder="little"):
             return False
 
         if response_data[8] != 0x01:
