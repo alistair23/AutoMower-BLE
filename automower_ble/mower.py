@@ -63,7 +63,7 @@ class Mower(BLEClient):
                     logger.debug("Sending keep alive")
                     await self.command("KeepAlive")
             except Exception as e:
-                logger.warning(f"Failed to send keep alive: {e}")
+                logger.warning("Failed to send keep alive: %s", e)
             await asyncio.sleep(15)
 
     async def command(self, command_name: str, **kwargs):
