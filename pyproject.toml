@@ -140,8 +140,6 @@ ignore = [
   "A001",    # Variable is shadowing a builtin
   "BLE001",  # Do not catch blind exception
   "E501",    # Line too long
-  "G003",    # Logging statement uses +
-  "G004",    # Logging statement uses f-string
   "PT009",   # Use a regular `assert` instead of unittest-style `assertEqual`
   "RET505",  # Unnecessary else after return
   "SLF001",  # Private member accessed

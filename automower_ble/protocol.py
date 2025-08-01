@@ -311,7 +311,7 @@ class BLEClient:
         return data
 
     async def _write_data(self, data):
-        logger.info("Writing: " + str(binascii.hexlify(data)))
+        logger.info("Writing: %s", str(binascii.hexlify(data)))
 
         chunk_size = self.MTU_SIZE - 3
         for chunk in (
@@ -344,14 +344,14 @@ class BLEClient:
                 data = data + await asyncio.wait_for(self.queue.get(), timeout=5)
             except TimeoutError:
                 logger.error(
-                    "Unable to get full response from device: '%s', currently have"
-                    + str(binascii.hexlify(data)),
+                    "Unable to get full response from device: '%s', currently have %s",
+                    str(binascii.hexlify(data)),
                     self.address,
                 )
                 logger.error("Expecting %d bytes, only have %d", length, len(data))
                 return None
 
-        logger.info("Final response: " + str(binascii.hexlify(data)))
+        logger.info("Final response: %s", str(binascii.hexlify(data)))
 
         return data
 
@@ -452,7 +452,7 @@ class BLEClient:
         async def notification_handler(
             characteristic: BleakGATTCharacteristic, data: bytearray
         ):
-            logger.info("Received: " + str(binascii.hexlify(data)))
+            logger.info("Received: %s", str(binascii.hexlify(data)))
             await self.queue.put(data)
 
         await self.client.start_notify(self.read_char, notification_handler)
