@@ -144,7 +144,5 @@ ignore = [
   "G004",    # Logging statement uses f-string
   "PT009",   # Use a regular `assert` instead of unittest-style `assertEqual`
   "RET505",  # Unnecessary else after return
-  "SIM103",  # Return the condition
-  "SIM401",  # if-else-block-instead-of-dict-get
   "SLF001",  # Private member accessed
 ]

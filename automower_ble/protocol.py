@@ -100,10 +100,7 @@ class Command:
         self.major = parameter["major"]
         self.minor = parameter["minor"]
 
-        if "requestType" in parameter:
-            self.request_data_type = parameter["requestType"]
-        else:
-            self.request_data_type = None
+        self.request_data_type = parameter.get("requestType")
 
         if "responseType" not in parameter:
             parameter["responseType"] = "no_response"

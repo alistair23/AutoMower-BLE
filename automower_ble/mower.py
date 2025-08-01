@@ -120,10 +120,7 @@ class Mower(BLEClient):
 
     async def is_charging(self) -> bool:
         """Get the mower charging status"""
-        if await self.command("IsCharging"):
-            return True
-        else:
-            return False
+        return bool(await self.command("IsCharging"))
 
     async def battery_level(self) -> int | None:
         """Query the mower battery level"""
