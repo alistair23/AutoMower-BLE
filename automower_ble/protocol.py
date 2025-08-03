@@ -187,7 +187,7 @@ class Command:
         for name, dtype in self.response_data_type.items():
             if dtype == "no_response":
                 return None
-            elif (dtype == "tUnixTime") or (dtype == "uint32"):
+            if (dtype == "tUnixTime") or (dtype == "uint32"):
                 response[name] = int.from_bytes(
                     data[dpos : dpos + 4], byteorder="little"
                 )
