@@ -140,6 +140,5 @@ ignore = [
   "BLE001",  # Do not catch blind exception
   "E501",    # Line too long
   "PT009",   # Use a regular `assert` instead of unittest-style `assertEqual`
-  "RET505",  # Unnecessary else after return
   "SLF001",  # Private member accessed
 ]

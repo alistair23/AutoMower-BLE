@@ -87,8 +87,7 @@ class Mower(BLEClient):
             response_dict is not None and len(response_dict) == 1
         ):  # If there is only one key in the response, return the value
             return response_dict["response"]
-        else:
-            return response_dict
+        return response_dict
 
     async def get_manufacturer(self) -> str | None:
         """Get the mower manufacturer"""
