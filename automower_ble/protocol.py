@@ -293,8 +293,6 @@ class BLEClient:
 
         except TimeoutError:
             logger.error("Unable to get response from device: '%s'", self.address)
-            if self.is_connected():
-                await self.disconnect()
             return None
 
         return data
