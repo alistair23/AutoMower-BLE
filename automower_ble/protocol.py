@@ -318,7 +318,9 @@ class BLEClient:
 
         if len(data) < 3:
             # We got such a small amount of data, let's try again
-            data = data + await self._get_response()
+            if chunk := await self._get_response() is None:
+                return None
+            data = data + chunk
 
             if len(data) < 3:
                 # Something is wrong
