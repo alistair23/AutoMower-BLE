@@ -519,7 +519,9 @@ class BLEClient:
                     model = (await client.read_gatt_char(char)).decode()
 
                 if char.uuid == "98bd0004-0b0e-421a-84e5-ddbf75dc6de4":
-                    device_type = (await client.read_gatt_char(char)).decode()
+                    device_type = (
+                        (await client.read_gatt_char(char)).rstrip(b"\x00").decode()
+                    )
 
         await client.disconnect()
 
