@@ -466,7 +466,13 @@ class BLEClient:
             response = await self._request_response(request)
             if response is None:
                 return ResponseResult.UNKNOWN_ERROR
-            return self.get_response_result(response)
+            result = self.get_response_result(response)
+            # If the result is UNKNOWN_ERROR, assume the pin was invalid
+            return (
+                ResponseResult.INVALID_PIN
+                if result == ResponseResult.UNKNOWN_ERROR
+                else result
+            )
 
         return ResponseResult.OK
 
