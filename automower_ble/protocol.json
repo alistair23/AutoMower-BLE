@@ -57,6 +57,42 @@
             "cuttingBladeUsageTime": "uint32"
         }
     },
+    "GetTotalRunningTime": {
+        "major": 4726,
+        "minor": 1,
+        "responseType": "uint32",
+        "description": "Total running time of the mower."
+    },
+    "GetTotalCuttingTime": {
+        "major": 4726,
+        "minor": 2,
+        "responseType": "uint32",
+        "description": "Total cutting time of the mower."
+    },
+    "GetTotalChargingTime": {
+        "major": 4726,
+        "minor": 3,
+        "responseType": "uint32",
+        "description": "Total charging time of the mower."
+    },
+    "GetTotalSearchingTime": {
+        "major": 4726,
+        "minor": 4,
+        "responseType": "uint32",
+        "description": "Total searching time of the mower."
+    },
+    "GetNumberOfCollisions": {
+        "major": 4726,
+        "minor": 5,
+        "responseType": "uint32",
+        "description": "Number of collisions detected by the mower."
+    },
+    "GetNumberOfChargingCycles": {
+        "major": 4726,
+        "minor": 6,
+        "responseType": "uint32",
+        "description": "Number of charging cycles completed by the mower."
+    },
     "EnterOperatorPin": {
         "major": 4664,
         "minor": 4,
