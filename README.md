@@ -51,6 +51,25 @@ You can run the unit tests with [pytest](https://docs.pytest.org). Install it by
 pytest
 ```
 
+## PIN codes with Flymo or similar
+
+Some models (Easilife Go and other brands that use Husqvarna internal boards) don't have an option to disable PIN.
+They accept the pin by pressing the sequence of buttons on the mower and on the app when setting up the pairing.
+The PIN sequence is translated to digits like this:
+
+On/OFF Power button = 1
+
+Go/Schedule button = 2
+
+Go button = 3
+
+Park button = 4
+
+See below image from operators manual. Which indicates the default pin would be 1234
+
+![image](https://github.com/user-attachments/assets/10c75863-a634-4686-bc4c-15bb128dcad9)
+
+This is specific to Flymo units, so PIN mapping may be different.
 
 ## Debugging logs on an Android phone
 
