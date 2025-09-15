@@ -5,8 +5,12 @@ import asyncio
 import logging
 import json
 from importlib.resources import files
-from bleak import BleakClient
 from bleak.backends.characteristic import BleakGATTCharacteristic
+from bleak_retry_connector import establish_connection, BleakClientWithServiceCache
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bleak import BleakClient
 
 logger = logging.getLogger(__name__)
 
@@ -388,10 +392,11 @@ class BLEClient:
             return ResponseResult.UNKNOWN_ERROR
 
         logger.info("connecting to device...")
-        self.client = BleakClient(
-            device, services=["98bd0001-0b0e-421a-84e5-ddbf75dc6de4"], use_cached=True
+        self.client = await establish_connection(
+            BleakClientWithServiceCache,
+            device,
+            device.name or "Unknown Device",
         )
-        await self.client.connect()
         logger.info("connected")
 
         logger.info("pairing device...")
@@ -475,11 +480,12 @@ class BLEClient:
 
     async def probe_gatts(self, device):
         logger.info("connecting to device...")
-        client = BleakClient(
-            device, services=["98bd0001-0b0e-421a-84e5-ddbf75dc6de4"], use_cached=True
+        client = await establish_connection(
+            BleakClientWithServiceCache,
+            device,
+            device.name or "Unknown Device",
+            max_attempts=3,  # Will retry up to 3 times with backoff
         )
-
-        await client.connect()
         logger.info("connected")
 
         manufacture = None

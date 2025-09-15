@@ -18,6 +18,7 @@ classifiers = [
 ]
 dependencies = [
   "bleak",
+  "bleak_retry_connector",
 ]
 
 [tool.ruff]
