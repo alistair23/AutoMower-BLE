@@ -11,10 +11,10 @@ requires-python = ">=3.12"
 authors     = [
     {name = "Alistair Francis", email = "alistair@alistair23.me"}
 ]
+license = "GPL-3.0-or-later"
 classifiers = [
   "Environment :: Console",
   "Programming Language :: Python :: 3",
-  "License :: OSI Approved :: MIT License",
 ]
 dependencies = [
   "bleak",
