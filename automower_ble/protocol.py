@@ -1,5 +1,5 @@
 import binascii
-from automower_ble.helpers import crc
+from .helpers import crc
 from enum import IntEnum
 import asyncio
 import logging
@@ -76,8 +76,8 @@ class ResponseResult(IntEnum):
 class TaskInformation:
     def __init__(
         self,
-        next_start_time,
-        duration_in_seconds,
+        start_time_in_minutes,
+        duration_in_minutes,
         on_monday,
         on_tuesday,
         on_wednesday,
@@ -86,8 +86,8 @@ class TaskInformation:
         on_saturday,
         on_sunday,
     ):
-        self.next_start_time = next_start_time
-        self.duration_in_seconds = duration_in_seconds
+        self.start_time_in_minutes = start_time_in_minutes
+        self.duration_in_minutes = duration_in_minutes
         self.on_monday = on_monday
         self.on_tuesday = on_tuesday
         self.on_wednesday = on_wednesday
@@ -165,6 +165,11 @@ class Command:
                 elif request_type == "uint8":
                     request_length += 1
                     request_data += kwargs[request_name].to_bytes(1, byteorder="little")
+                elif request_type == "bool":
+                    request_length += 1
+                    request_data += (1 if kwargs[request_name] else 0).to_bytes(
+                        1, byteorder="little"
+                    )
                 else:
                     raise ValueError("Unknown request type: " + request_type)
         self.request_data[16] = request_length
@@ -201,6 +206,14 @@ class Command:
                     data[dpos : dpos + 2], byteorder="little"
                 )
                 dpos += 2
+            elif dtype == "sint16":
+                response[name] = int.from_bytes(
+                    data[dpos : dpos + 2], byteorder="little", signed=True
+                )
+                dpos += 2
+            elif dtype == "remaining_uint":
+                response[name] = int.from_bytes(data[dpos:], byteorder="little")
+                dpos = len(data)
             elif (dtype == "uint8") or (dtype == "bool"):
                 response[name] = data[dpos]
                 dpos += 1
@@ -283,7 +296,9 @@ class BLEClient:
         if self.protocol is None:
 
             def read_protocol_file():
-                with files("automower_ble").joinpath("protocol.json").open("r") as f:
+                protocol_file = files(__package__).joinpath("protocol.json")
+                logger.debug("Loading protocol from %s", protocol_file)
+                with protocol_file.open("r") as f:
                     return json.load(f)
 
             self.protocol = await asyncio.get_running_loop().run_in_executor(
@@ -318,16 +333,29 @@ class BLEClient:
         if data is None:
             return None
 
-        if len(data) < 3:
-            # We got such a small amount of data, let's try again
-            if (chunk := await self._get_response()) is None:
-                return None
-            data = data + chunk
+        while data and data[0] != 0x02:
+            packet_start = data.find(b"\x02")
+            if packet_start >= 0:
+                logger.debug(
+                    "Discarding stale response prefix: %s",
+                    binascii.hexlify(data[:packet_start]),
+                )
+                data = data[packet_start:]
+                break
 
-            if len(data) < 3:
-                # Something is wrong
+            logger.debug(
+                "Discarding stale response fragment: %s", binascii.hexlify(data)
+            )
+            data = await self._get_response()
+            if data is None:
                 return None
 
+        while len(data) < 3:
+            # We got such a small amount of data, let's try again.
+            chunk = await self._get_response()
+            if chunk is None:
+                return None
+            data += chunk
         length = data[2] + 4
 
         logger.debug("Waiting for %d bytes", length)
@@ -337,9 +365,9 @@ class BLEClient:
                 data = data + await asyncio.wait_for(self.queue.get(), timeout=5)
             except TimeoutError:
                 logger.error(
-                    "Unable to get full response from device: '%s', currently have %s",
-                    str(binascii.hexlify(data)),
+                    "Unable to get full response from device '%s', currently have %s",
                     self.address,
+                    str(binascii.hexlify(data)),
                 )
                 logger.error("Expecting %d bytes, only have %d", length, len(data))
                 return None
@@ -350,27 +378,29 @@ class BLEClient:
 
     async def _request_response(self, request_data):
         async with self.lock:
-            try:
-                # If there are previous responses, flush them out
-                while not self.queue.empty():
-                    await self.queue.get()
+            return await self._request_response_locked(request_data)
 
-                await self._write_data(request_data)
+    async def _request_response_locked(self, request_data):
+        """Send a request while the caller already holds the BLE command lock."""
+        try:
+            # If there are previous responses, flush them out
+            while not self.queue.empty():
+                await self.queue.get()
 
-                response_data = await self._read_data()
-                if response_data is None:
-                    logger.error(
-                        "Unable to communicate with device: '%s'", self.address
-                    )
-                    if self.is_connected():
-                        await self.disconnect()
-                    return None
+            await self._write_data(request_data)
 
-            except asyncio.exceptions.CancelledError:
-                logger.debug("Received CancelledError")
+            response_data = await self._read_data()
+            if response_data is None:
+                logger.error("Unable to communicate with device: '%s'", self.address)
                 if self.is_connected():
                     await self.disconnect()
                 return None
+
+        except asyncio.exceptions.CancelledError:
+            logger.debug("Received CancelledError")
+            if self.is_connected():
+                await self.disconnect()
+            return None
 
         return response_data
 

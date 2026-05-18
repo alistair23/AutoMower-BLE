@@ -27,11 +27,17 @@ from bleak import BleakScanner
 
 logger = logging.getLogger(__name__)
 
+MAX_SCHEDULE_TASKS = 15
+SECONDS_PER_MINUTE = 60
+MINUTES_PER_DAY = 24 * 60
+SPOT_CUT_DURATION_SECONDS = 30 * SECONDS_PER_MINUTE
+
 
 class Mower(BLEClient):
     def __init__(self, channel_id: int, address, pin=None):
         super().__init__(channel_id, address, pin)
         self.keep_alive_event = asyncio.Event()
+        self.task: asyncio.Task | None = None
 
     async def connect(self, device) -> ResponseResult:
         """
@@ -41,7 +47,9 @@ class Mower(BLEClient):
         """
         status = await super().connect(device)
         if status == ResponseResult.OK:
-            self.task = asyncio.create_task(self._keep_alive())
+            self.keep_alive_event.clear()
+            if self.task is None or self.task.done():
+                self.task = asyncio.create_task(self._keep_alive())
         return status
 
     async def disconnect(self):
@@ -50,7 +58,16 @@ class Mower(BLEClient):
         `connect()` before the Python script exits
         """
         self.keep_alive_event.set()
-        return await super().disconnect()
+        try:
+            return await super().disconnect()
+        finally:
+            if self.task is not None and self.task is not asyncio.current_task():
+                self.task.cancel()
+                try:
+                    await self.task
+                except asyncio.CancelledError:
+                    pass
+                self.task = None
 
     async def _keep_alive(self):
         """
@@ -88,6 +105,65 @@ class Mower(BLEClient):
         ):  # If there is only one key in the response, return the value
             return response_dict["response"]
         return response_dict
+
+    async def command_response(
+        self, command_name: str, warn_on_error: bool = True, **kwargs
+    ):
+        """
+        Send a command and return the mower response result with parsed data.
+
+        This is useful for command buttons where Home Assistant should surface a
+        clear command failure instead of only logging a low-level protocol warning.
+        """
+        command = Command(self.channel_id, (await self.get_protocol())[command_name])
+        request = command.generate_request(**kwargs)
+        response = await self._request_response(request)
+        if response is None:
+            return ResponseResult.UNKNOWN_ERROR, None
+
+        result = ResponseResult(response[16])
+        if result is not ResponseResult.OK:
+            if warn_on_error:
+                logger.warning("%s returned %s", command_name, result.name)
+            else:
+                logger.debug("%s returned %s", command_name, result.name)
+            return result, None
+
+        try:
+            response_dict = command.parse_response(response)
+        except ValueError as err:
+            logger.debug("%s returned unparsable payload: %s", command_name, err)
+            return result, None
+        if response_dict is not None and len(response_dict) == 1:
+            return result, response_dict["response"]
+        return result, response_dict
+
+    async def command_response_locked(
+        self, command_name: str, warn_on_error: bool = True, **kwargs
+    ):
+        """Send a command while the caller already holds the BLE command lock."""
+        command = Command(self.channel_id, (await self.get_protocol())[command_name])
+        request = command.generate_request(**kwargs)
+        response = await self._request_response_locked(request)
+        if response is None:
+            return ResponseResult.UNKNOWN_ERROR, None
+
+        result = ResponseResult(response[16])
+        if result is not ResponseResult.OK:
+            if warn_on_error:
+                logger.warning("%s returned %s", command_name, result.name)
+            else:
+                logger.debug("%s returned %s", command_name, result.name)
+            return result, None
+
+        try:
+            response_dict = command.parse_response(response)
+        except ValueError as err:
+            logger.debug("%s returned unparsable payload: %s", command_name, err)
+            return result, None
+        if response_dict is not None and len(response_dict) == 1:
+            return result, response_dict["response"]
+        return result, response_dict
 
     async def get_manufacturer(self) -> str | None:
         """Get the mower manufacturer"""
@@ -169,22 +245,81 @@ class Mower(BLEClient):
         # The response validation is expected to fail
         await self.command("StartTrigger")
 
+    async def mower_spot_cut(self) -> ResponseResult:
+        """
+        Start spot cutting.
+
+        The dedicated StartSpotCutting command is rejected with INVALID_ID on
+        some Gardena models. The official app first arms SpotCut, then starts
+        a manual mowing override.
+        """
+        async with self.lock:
+            result, _ = await self.command_response_locked(
+                "SetMode", mode=ModeOfOperation.AUTO
+            )
+            if result is not ResponseResult.OK:
+                return result
+
+            result, _ = await self.command_response_locked("PrepareSpotCutting")
+            if result is not ResponseResult.OK:
+                return result
+
+            result, _ = await self.command_response_locked(
+                "SetOverrideMow", duration=SPOT_CUT_DURATION_SECONDS
+            )
+            if result is not ResponseResult.OK:
+                return result
+
+            result, _ = await self.command_response_locked(
+                "StartTrigger", warn_on_error=False
+            )
+            if result is ResponseResult.OK:
+                return result
+
+            if result is ResponseResult.UNKNOWN_ERROR:
+                await asyncio.sleep(2)
+                _, state = await self.command_response_locked(
+                    "GetState", warn_on_error=False
+                )
+                _, activity = await self.command_response_locked(
+                    "GetActivity", warn_on_error=False
+                )
+                if (
+                    state == MowerState.IN_OPERATION
+                    and activity == MowerActivity.MOWING
+                ):
+                    logger.debug(
+                        "StartTrigger returned UNKNOWN_ERROR but mower is mowing"
+                    )
+                    return ResponseResult.OK
+
+            logger.warning("StartTrigger returned %s", result.name)
+            return result
+
+    async def mower_stop_spot_cut(self) -> ResponseResult:
+        """Stop SpotCut by pausing the mower, matching the app-observed flow."""
+        result, _ = await self.command_response("Pause")
+        return result
+
     async def mower_park(self):
         await self.command("SetOverrideParkUntilNextStart")
 
         # Request trigger to start, the response validation is expected to fail
-        await self.command("StartTrigger")
+        # [AT] Seems not needed for Gardena. It resumes the mower!
+        # await self.command("StartTrigger")
 
     async def get_task(self, taskid: int) -> TaskInformation | None:
         """
         Get information about a specific task
         """
-        task = await self.command("GetTask", taskId=taskid)
-        if task is None:
+        result, task = await self.command_response(
+            "GetTask", warn_on_error=False, taskId=taskid
+        )
+        if result is not ResponseResult.OK or task is None:
             return None
         return TaskInformation(
-            task["start"],
-            task["duration"],
+            task["start"] // SECONDS_PER_MINUTE,
+            (task["duration"] + SECONDS_PER_MINUTE - 1) // SECONDS_PER_MINUTE,
             task["useOnMonday"],
             task["useOnTuesday"],
             task["useOnWednesday"],
@@ -193,6 +328,99 @@ class Mower(BLEClient):
             task["useOnSaturday"],
             task["useOnSunday"],
         )
+
+    async def get_tasks(self) -> list[TaskInformation]:
+        """Get all weekly schedule tasks from the mower."""
+        task_count = await self.command("GetNumberOfTasks")
+        if task_count is None:
+            return []
+        logger.debug("Mower reported %s schedule tasks", task_count)
+
+        for first_task_id in (0, 1):
+            tasks: list[TaskInformation] = []
+            for task_id in range(first_task_id, first_task_id + task_count):
+                task = await self.get_task(task_id)
+                if task is None:
+                    logger.debug("Unable to read schedule task %s", task_id)
+                    break
+                tasks.append(task)
+            if len(tasks) == task_count:
+                logger.debug(
+                    "Read %s schedule tasks starting at task id %s",
+                    len(tasks),
+                    first_task_id,
+                )
+                return tasks
+
+        logger.debug("Unable to read mower schedule tasks")
+        return []
+
+    async def set_tasks(self, tasks: list[TaskInformation]) -> None:
+        """Replace the weekly schedule tasks on the mower."""
+        if len(tasks) > MAX_SCHEDULE_TASKS:
+            raise ValueError(
+                f"A maximum of {MAX_SCHEDULE_TASKS} schedule tasks is supported"
+            )
+
+        for task in tasks:
+            if (
+                task.start_time_in_minutes < 0
+                or task.start_time_in_minutes >= MINUTES_PER_DAY
+            ):
+                raise ValueError("Schedule start time must be within one day")
+            if (
+                task.duration_in_minutes <= 0
+                or task.duration_in_minutes > MINUTES_PER_DAY
+            ):
+                raise ValueError(
+                    "Schedule duration must be between 1 minute and 24 hours"
+                )
+
+        await self._expect_ok("StartTaskTransaction")
+        await self._expect_ok("DeleteAllTask")
+
+        for task in tasks:
+            logger.debug(
+                "Writing schedule task start=%s duration=%s days=%s",
+                task.start_time_in_minutes,
+                task.duration_in_minutes,
+                {
+                    "monday": bool(task.on_monday),
+                    "tuesday": bool(task.on_tuesday),
+                    "wednesday": bool(task.on_wednesday),
+                    "thursday": bool(task.on_thursday),
+                    "friday": bool(task.on_friday),
+                    "saturday": bool(task.on_saturday),
+                    "sunday": bool(task.on_sunday),
+                },
+            )
+            await self._expect_ok(
+                "AddTask",
+                start=int(task.start_time_in_minutes) * SECONDS_PER_MINUTE,
+                duration=int(task.duration_in_minutes) * SECONDS_PER_MINUTE,
+                useOnMonday=bool(task.on_monday),
+                useOnTuesday=bool(task.on_tuesday),
+                useOnWednesday=bool(task.on_wednesday),
+                useOnThursday=bool(task.on_thursday),
+                useOnFriday=bool(task.on_friday),
+                useOnSaturday=bool(task.on_saturday),
+                useOnSunday=bool(task.on_sunday),
+                unknown=0,
+            )
+
+        await self._expect_ok("CommitTaskTransaction")
+
+    async def clear_tasks(self) -> None:
+        """Remove all weekly schedule tasks from the mower."""
+        await self._expect_ok("StartTaskTransaction")
+        await self._expect_ok("DeleteAllTask")
+        await self._expect_ok("CommitTaskTransaction")
+
+    async def _expect_ok(self, command_name: str, **kwargs) -> None:
+        """Send a command and raise when the mower rejects it."""
+        result, _ = await self.command_response(command_name, **kwargs)
+        if result is not ResponseResult.OK:
+            raise RuntimeError(f"{command_name} returned {result.name}")
 
 
 async def main(mower: Mower):
