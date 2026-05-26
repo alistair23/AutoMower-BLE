@@ -5,6 +5,7 @@ import asyncio
 import logging
 import json
 from importlib.resources import files
+from bleak import BleakError
 from bleak.backends.characteristic import BleakGATTCharacteristic
 from bleak_retry_connector import establish_connection, BleakClientWithServiceCache
 from typing import TYPE_CHECKING
@@ -13,6 +14,9 @@ if TYPE_CHECKING:
     from bleak import BleakClient
 
 logger = logging.getLogger(__name__)
+
+GARDENA_WRITE_CHAR = "98bd0002-0b0e-421a-84e5-ddbf75dc6de4"
+GARDENA_READ_CHAR = "98bd0003-0b0e-421a-84e5-ddbf75dc6de4"
 
 
 class ModeOfOperation(IntEnum):
@@ -226,6 +230,16 @@ class Command:
                     "\x00"
                 )  # Remove trailing null bytes
                 dpos += len(data)
+            elif dtype == "utf16":
+                if len(self.response_data_type) != 1:
+                    raise ValueError(
+                        "UTF-16 response type can currently only be used when there is only one response type"
+                    )
+                try:
+                    response[name] = data.decode("utf-16-le").rstrip("\x00")
+                except UnicodeDecodeError as err:
+                    raise ValueError("Unable to decode UTF-16 response") from err
+                dpos += len(data)
             else:
                 raise ValueError("Unknown data type: " + dtype)
         if dpos != len(data):
@@ -291,6 +305,9 @@ class BLEClient:
 
         self.client: BleakClient | None = None
         self.protocol = None
+        self.write_char: BleakGATTCharacteristic | None = None
+        self.read_char: BleakGATTCharacteristic | None = None
+        self._notify_started = False
 
     async def get_protocol(self):
         if self.protocol is None:
@@ -311,7 +328,7 @@ class BLEClient:
             data = await asyncio.wait_for(self.queue.get(), timeout=10)
 
         except TimeoutError:
-            logger.error("Unable to get response from device: '%s'", self.address)
+            logger.warning("Unable to get response from device: '%s'", self.address)
             return None
 
         return data
@@ -391,7 +408,7 @@ class BLEClient:
 
             response_data = await self._read_data()
             if response_data is None:
-                logger.error("Unable to communicate with device: '%s'", self.address)
+                logger.warning("Unable to communicate with device: '%s'", self.address)
                 if self.is_connected():
                     await self.disconnect()
                 return None
@@ -401,6 +418,11 @@ class BLEClient:
             if self.is_connected():
                 await self.disconnect()
             return None
+        except BleakError as err:
+            logger.warning("BLE communication failed: %s", err)
+            if self.is_connected():
+                await self.disconnect()
+            raise
 
         return response_data
 
@@ -413,7 +435,7 @@ class BLEClient:
         logger.info("starting scan...")
 
         if device is None:
-            logger.error("could not find device with address '%s'", self.address)
+            logger.warning("Could not find device with address '%s'", self.address)
             return ResponseResult.UNKNOWN_ERROR
 
         logger.info("connecting to device...")
@@ -430,6 +452,8 @@ class BLEClient:
             logger.info("paired")
         except Exception as err:
             logger.debug("Pairing not completed, continuing anyway: %s", err)
+            if not self.client.is_connected:
+                return ResponseResult.UNKNOWN_ERROR
 
         # This is not safe, _mtu_size is not defined in BaseBleakClient but may
         # be defined in subclasses.
@@ -439,10 +463,21 @@ class BLEClient:
             logger.info("[Service] %s", service)
 
             for char in service.characteristics:
-                if (
-                    "read" in char.properties
-                    and char.uuid != "98bd0003-0b0e-421a-84e5-ddbf75dc6de4"
-                ):
+                if char.uuid == GARDENA_WRITE_CHAR:
+                    self.write_char = char
+
+                if char.uuid == GARDENA_READ_CHAR:
+                    self.read_char = char
+
+                if char.uuid in (GARDENA_WRITE_CHAR, GARDENA_READ_CHAR):
+                    logger.debug(
+                        "  [Characteristic] %s (%s)",
+                        char,
+                        ",".join(char.properties),
+                    )
+                    continue
+
+                if "read" in char.properties:
                     try:
                         value = await self.client.read_gatt_char(char.uuid)
                         logger.debug(
@@ -452,7 +487,7 @@ class BLEClient:
                             value,
                         )
                     except Exception as e:
-                        logger.error(
+                        logger.debug(
                             "  [Characteristic] %s (%s), Error: %s",
                             char,
                             ",".join(char.properties),
@@ -462,11 +497,6 @@ class BLEClient:
                     logger.debug(
                         "  [Characteristic] %s (%s)", char, ",".join(char.properties)
                     )
-                if char.uuid == "98bd0002-0b0e-421a-84e5-ddbf75dc6de4":
-                    self.write_char = char
-
-                if char.uuid == "98bd0003-0b0e-421a-84e5-ddbf75dc6de4":
-                    self.read_char = char
 
         async def notification_handler(
             characteristic: BleakGATTCharacteristic, data: bytearray
@@ -474,12 +504,20 @@ class BLEClient:
             logger.info("Received: %s", str(binascii.hexlify(data)))
             await self.queue.put(data)
 
+        if self.write_char is None or self.read_char is None:
+            logger.error("Gardena protocol characteristics not found")
+            if self.is_connected():
+                await self.disconnect()
+            return ResponseResult.UNKNOWN_ERROR
+
         try:
             await self.client.start_notify(self.read_char, notification_handler)
-        except Exception:
-            await self.client.disconnect()
-            raise
-
+            self._notify_started = True
+        except Exception as err:
+            logger.warning("Unable to subscribe to mower notifications: %s", err)
+            if self.is_connected():
+                await self.disconnect()
+            return ResponseResult.NOT_ALLOWED
         await asyncio.sleep(5.0)
 
         request = self.generate_request_setup_channel_id()
@@ -569,7 +607,16 @@ class BLEClient:
         `connect()` before the Python script exits
         """
 
-        await self.client.stop_notify(self.read_char)
+        if self.client is None:
+            return
+
+        if self._notify_started and self.read_char is not None:
+            try:
+                await self.client.stop_notify(self.read_char)
+            except BleakError as err:
+                logger.debug("Unable to stop notifications: %s", err)
+            finally:
+                self._notify_started = False
         await self.queue.put(None)
 
         logger.info("disconnecting...")

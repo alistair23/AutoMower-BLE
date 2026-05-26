@@ -276,6 +276,12 @@
         "description": "Get the user defined mower name",
         "responseType": "ascii"
     },
+    "GetUserMowerName": {
+        "major": 4698,
+        "minor": 3,
+        "description": "Get the user defined mower name as UTF-16.",
+        "responseType": "utf16"
+    },
     "GetModel": {
         "major": 4698,
         "minor": 9,
@@ -290,6 +296,12 @@
         "minor": 10,
         "responseType": "uint32",
         "description": "Serial number of the mower."
+    },
+    "GetSoftwarePackageVersion": {
+        "major": 4698,
+        "minor": 22,
+        "responseType": "ascii",
+        "description": "Software package version string."
     },
     "GetAllStatistics": {
         "major": 4726,
@@ -374,6 +386,31 @@
             "guide3Signal": "sint16"
         },
         "description": "Realtime loop and guide signal quality."
+    },
+    "GetLoopSignals": {
+        "major": 4462,
+        "minor": 13,
+        "requestType": {
+            "signalType": "uint8"
+        },
+        "responseType": {
+            "a0Signal": "sint16",
+            "fSignal": "sint16",
+            "nSignal": "sint16",
+            "guide1Signal": "sint16",
+            "guide2Signal": "sint16",
+            "guide3Signal": "sint16"
+        },
+        "description": "Realtime loop and guide signal diagnostics used by the Gardena app."
+    },
+    "GetLoopSignalStrength": {
+        "major": 4462,
+        "minor": 14,
+        "requestType": {
+            "signalType": "uint8"
+        },
+        "responseType": "uint8",
+        "description": "Realtime loop signal strength percentage used by the Gardena app."
     },
 
     "GetComboardSensorData": {
@@ -613,5 +650,33 @@
         "minor": 5,
         "responseType": "uint16",
         "description": "Hardware revision."
+    },
+    "GetSupportedAccessories": {
+        "major": 4166,
+        "minor": 8,
+        "responseType": "uint16",
+        "description": "Supported mower accessory bitmask."
+    },
+    "GetChargingStationLoopSignalGeneration": {
+        "major": 5370,
+        "minor": 1,
+        "responseType": "bool",
+        "description": "Charging station loop signal generation or eco mode state."
+    },
+    "SetChargingStationLoopSignalGeneration": {
+        "major": 5370,
+        "minor": 2,
+        "requestType": {
+            "enabled": "bool"
+        },
+        "description": "Enable or disable charging station loop signal generation or eco mode."
+    },
+    "GenerateLoopSignal": {
+        "major": 5356,
+        "minor": 3,
+        "requestType": {
+            "signalType": "uint8"
+        },
+        "description": "Generate a new loop signal between mower and charging station."
     }
 }
