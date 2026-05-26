@@ -302,7 +302,10 @@ class Mower(BLEClient):
         return result
 
     async def mower_park(self):
-        await self.command("SetOverrideParkUntilNextStart")
+        # Duration 0 matches the app's "park until further notice/permanently"
+        # option. "Park until next start" can resume immediately when a manual
+        # or smart schedule is still active.
+        await self.command("SetOverridePark", duration=0)
 
         # Request trigger to start, the response validation is expected to fail
         # [AT] Seems not needed for Gardena. It resumes the mower!
