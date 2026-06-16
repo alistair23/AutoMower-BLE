@@ -406,7 +406,10 @@ class BLEClient:
             logger.info("[Service] %s", service)
 
             for char in service.characteristics:
-                if "read" in char.properties:
+                if (
+                    "read" in char.properties
+                    and char.uuid != "98bd0003-0b0e-421a-84e5-ddbf75dc6de4"
+                ):
                     try:
                         value = await self.client.read_gatt_char(char.uuid)
                         logger.debug(
@@ -422,12 +425,6 @@ class BLEClient:
                             ",".join(char.properties),
                             e,
                         )
-                        if (
-                            char.uuid == "98bd0002-0b0e-421a-84e5-ddbf75dc6de4"
-                            or char.uuid == "98bd0003-0b0e-421a-84e5-ddbf75dc6de4"
-                        ):
-                            return ResponseResult.NOT_ALLOWED
-
                 else:
                     logger.debug(
                         "  [Characteristic] %s (%s)", char, ",".join(char.properties)
