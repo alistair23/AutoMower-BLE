@@ -509,6 +509,10 @@ class BLEClient:
                             ",".join(char.properties),
                             value,
                         )
+                        if char.uuid == "00002a00-0000-1000-8000-00805f9b34fb":
+                            model = value.decode()
+                        if char.uuid == "98bd0004-0b0e-421a-84e5-ddbf75dc6de4":
+                            device_type = value.rstrip(b"\x00").decode()
                     except Exception as e:
                         logger.error(
                             "  [Characteristic] %s (%s), Error: %s",
@@ -516,18 +520,9 @@ class BLEClient:
                             ",".join(char.properties),
                             e,
                         )
-
                 else:
                     logger.debug(
                         "  [Characteristic] %s (%s)", char, ",".join(char.properties)
-                    )
-
-                if char.uuid == "00002a00-0000-1000-8000-00805f9b34fb":
-                    model = (await client.read_gatt_char(char)).decode()
-
-                if char.uuid == "98bd0004-0b0e-421a-84e5-ddbf75dc6de4":
-                    device_type = (
-                        (await client.read_gatt_char(char)).rstrip(b"\x00").decode()
                     )
 
         await client.disconnect()
