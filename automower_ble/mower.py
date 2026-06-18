@@ -8,6 +8,7 @@ how the request and response classes can be used.
 
 import argparse
 import asyncio
+import contextlib
 import datetime as dt
 import logging
 
@@ -63,10 +64,8 @@ class Mower(BLEClient):
         finally:
             if self.task is not None and self.task is not asyncio.current_task():
                 self.task.cancel()
-                try:
+                with contextlib.suppress(asyncio.CancelledError):
                     await self.task
-                except asyncio.CancelledError:
-                    pass
                 self.task = None
 
     async def _keep_alive(self):
