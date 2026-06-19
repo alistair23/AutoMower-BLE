@@ -395,8 +395,11 @@ class BLEClient:
         logger.info("connected")
 
         logger.info("pairing device...")
-        await self.client.pair()
-        logger.info("paired")
+        try:
+            await self.client.pair()
+            logger.info("paired")
+        except Exception as err:
+            logger.debug("Pairing not completed, continuing anyway: %s", err)
 
         # This is not safe, _mtu_size is not defined in BaseBleakClient but may
         # be defined in subclasses.
@@ -441,7 +444,11 @@ class BLEClient:
             logger.info("Received: %s", str(binascii.hexlify(data)))
             await self.queue.put(data)
 
-        await self.client.start_notify(self.read_char, notification_handler)
+        try:
+            await self.client.start_notify(self.read_char, notification_handler)
+        except Exception:
+            await self.client.disconnect()
+            raise
 
         await asyncio.sleep(5.0)
 
