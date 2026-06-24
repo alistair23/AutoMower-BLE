@@ -334,7 +334,7 @@ class BLEClient:
         return data
 
     async def _write_data(self, data):
-        logger.info("Writing: %s", str(binascii.hexlify(data)))
+        logger.debug("Writing: %s", str(binascii.hexlify(data)))
 
         chunk_size = self.MTU_SIZE - 3
         for chunk in (
@@ -389,7 +389,7 @@ class BLEClient:
                 logger.error("Expecting %d bytes, only have %d", length, len(data))
                 return None
 
-        logger.info("Final response: %s", str(binascii.hexlify(data)))
+        logger.debug("Final response: %s", str(binascii.hexlify(data)))
 
         return data
 
@@ -437,6 +437,10 @@ class BLEClient:
         if device is None:
             logger.warning("Could not find device with address '%s'", self.address)
             return ResponseResult.UNKNOWN_ERROR
+
+        self.write_char = None
+        self.read_char = None
+        self._notify_started = False
 
         logger.info("connecting to device...")
         self.client = await establish_connection(
@@ -501,7 +505,7 @@ class BLEClient:
         async def notification_handler(
             characteristic: BleakGATTCharacteristic, data: bytearray
         ):
-            logger.info("Received: %s", str(binascii.hexlify(data)))
+            logger.debug("Received: %s", str(binascii.hexlify(data)))
             await self.queue.put(data)
 
         if self.write_char is None or self.read_char is None:
@@ -552,6 +556,10 @@ class BLEClient:
         return bool(self.client and self.client.is_connected)
 
     async def probe_gatts(self, device):
+        self.write_char = None
+        self.read_char = None
+        self._notify_started = False
+
         logger.info("connecting to device...")
         client = await establish_connection(
             BleakClientWithServiceCache,
@@ -610,6 +618,10 @@ class BLEClient:
         logger.info("disconnecting...")
         await self.client.disconnect()
         logger.info("disconnected")
+        self.client = None
+        self.write_char = None
+        self.read_char = None
+        self._notify_started = False
 
         await self.queue.put(None)
 
