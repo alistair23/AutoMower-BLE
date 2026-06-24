@@ -51,7 +51,7 @@
     },
     "GetSensorControlSensitivity": {
         "major": 4460,
-        "minor": 4,
+        "minor": 6,
         "responseType": "uint8",
         "description": "Get SensorControl mowing time adjustment sensitivity."
     },
@@ -65,7 +65,7 @@
     },
     "GetSensorControlEnabled": {
         "major": 4460,
-        "minor": 6,
+        "minor": 4,
         "responseType": "bool",
         "description": "Get SensorControl mowing time adjustment state."
     },
@@ -143,7 +143,8 @@
         "responseType": {
             "action": "uint8",
             "startTime": "tUnixTime",
-            "duration": "uint32"
+            "duration": "uint32",
+            "reserved": "remaining_uint"
         },
         "description": "Override status."
     },
