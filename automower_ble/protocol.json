@@ -17,6 +17,24 @@
         "responseType": "uint32",
         "description": "Remaining charge time."
     },
+    "GetBatteryVoltage": {
+        "major": 4106,
+        "minor": 1,
+        "responseType": "uint16",
+        "description": "Battery voltage."
+    },
+    "GetBatteryCurrent": {
+        "major": 4106,
+        "minor": 8,
+        "responseType": "sint16",
+        "description": "Battery current."
+    },
+    "GetBatteryTemperature": {
+        "major": 4106,
+        "minor": 9,
+        "responseType": "sint16",
+        "description": "Battery temperature."
+    },
     "GetCuttingHeight": {
         "major": 4422,
         "minor": 2,
@@ -30,6 +48,40 @@
             "height": "uint8"
         },
         "description": "Cutting height, from 1 to 9 centimeters."
+    },
+    "GetSensorControlSensitivity": {
+        "major": 4460,
+        "minor": 6,
+        "responseType": "uint8",
+        "description": "Get SensorControl mowing time adjustment sensitivity."
+    },
+    "SetSensorControlEnabled": {
+        "major": 4460,
+        "minor": 5,
+        "requestType": {
+            "enabled": "bool"
+        },
+        "description": "Enable or disable SensorControl mowing time adjustment."
+    },
+    "GetSensorControlEnabled": {
+        "major": 4460,
+        "minor": 4,
+        "responseType": "bool",
+        "description": "Get SensorControl mowing time adjustment state."
+    },
+    "SetSensorControlSensitivity": {
+        "major": 4460,
+        "minor": 7,
+        "requestType": {
+            "sensitivity": "uint8"
+        },
+        "description": "Set SensorControl mowing time adjustment sensitivity."
+    },
+    "GetFrostSensorEnabled": {
+        "major": 4476,
+        "minor": 6,
+        "responseType": "bool",
+        "description": "Get frost sensor enabled state."
     },
     "SetMode": {
         "major": 4586,
@@ -91,7 +143,8 @@
         "responseType": {
             "action": "uint8",
             "startTime": "tUnixTime",
-            "duration": "uint32"
+            "duration": "uint32",
+            "reserved": "remaining_uint"
         },
         "description": "Override status."
     },
@@ -176,7 +229,7 @@
             "useOnFriday": "bool",
             "useOnSaturday": "bool",
             "useOnSunday": "bool",
-            "unknown": "uint16"
+            "unknown": "remaining_uint"
         },
         "description": "Get a specified task"
     },
@@ -185,16 +238,15 @@
         "minor": 7,
         "requestType": {
             "start": "uint32",
-            "duration": "uint16",
-            "useOnSunday": "bool",
-            "unknown_1": "uint8",
+            "duration": "uint32",
             "useOnMonday": "bool",
             "useOnTuesday": "bool",
             "useOnWednesday": "bool",
             "useOnThursday": "bool",
             "useOnFriday": "bool",
             "useOnSaturday": "bool",
-            "unknown_2": "uint8"
+            "useOnSunday": "bool",
+            "unknown": "uint16"
         },
         "description": "Add a new task during a task transaction"
     },
@@ -225,6 +277,12 @@
         "description": "Get the user defined mower name",
         "responseType": "ascii"
     },
+    "GetUserMowerName": {
+        "major": 4698,
+        "minor": 3,
+        "description": "Get the user defined mower name as UTF-16.",
+        "responseType": "utf16"
+    },
     "GetModel": {
         "major": 4698,
         "minor": 9,
@@ -239,6 +297,12 @@
         "minor": 10,
         "responseType": "uint32",
         "description": "Serial number of the mower."
+    },
+    "GetSoftwarePackageVersion": {
+        "major": 4698,
+        "minor": 22,
+        "responseType": "ascii",
+        "description": "Software package version string."
     },
     "GetAllStatistics": {
         "major": 4726,
@@ -306,5 +370,314 @@
             "code": "uint32",
             "severity": "uint8"
         }
+    },
+
+    "GetSignalQuality": {
+        "major": 20,
+        "minor": 21,
+        "responseType": {
+            "signalQuality": "uint8",
+            "a0Signal": "sint16",
+            "fSignal": "sint16",
+            "guide1Signal": "sint16",
+            "guide2Signal": "sint16",
+            "messageFromChargingStation": "uint16",
+            "inChargingStation": "uint8",
+            "nSignal": "sint16",
+            "guide3Signal": "sint16"
+        },
+        "description": "Realtime loop and guide signal quality."
+    },
+    "GetLoopSignals": {
+        "major": 4462,
+        "minor": 13,
+        "requestType": {
+            "signalType": "uint8"
+        },
+        "responseType": {
+            "a0Signal": "sint16",
+            "fSignal": "sint16",
+            "nSignal": "sint16",
+            "guide1Signal": "sint16",
+            "guide2Signal": "sint16",
+            "guide3Signal": "sint16"
+        },
+        "description": "Realtime loop and guide signal diagnostics used by the Gardena app."
+    },
+    "GetLoopSignalStrength": {
+        "major": 4462,
+        "minor": 14,
+        "requestType": {
+            "signalType": "uint8"
+        },
+        "responseType": "uint8",
+        "description": "Realtime loop signal strength percentage used by the Gardena app."
+    },
+
+    "GetComboardSensorData": {
+        "major": 20,
+        "minor": 4,
+        "responseType": {
+            "collision": "uint8",
+            "lift": "uint8",
+            "pitch": "sint16",
+            "roll": "sint16",
+            "zAcceleration": "sint16",
+            "upsideDown": "uint8",
+            "mowerTemperature": "sint16"
+        },
+        "description": "Realtime mower sensor data."
+    },
+    "GetOrientationPitch": {
+        "major": 4958,
+        "minor": 0,
+        "responseType": "sint16",
+        "description": "Orientation pitch angle."
+    },
+    "GetOrientationRoll": {
+        "major": 4958,
+        "minor": 1,
+        "responseType": "sint16",
+        "description": "Orientation roll angle."
+    },
+
+    "GetDrivePastWire": {
+        "major": 4712,
+        "minor": 0,
+        "responseType": "uint16",
+        "description": "Get drive past wire distance."
+    },
+
+    "SetDrivePastWire": {
+        "major": 4712,
+        "minor": 1,
+        "requestType": {
+            "distance": "uint16"
+        },
+        "description": "Set drive past wire distance."
+    },
+
+    "GetAllDrivingSettings": {
+        "major": 4712,
+        "minor": 2,
+        "responseType": {
+            "drivePastWire": "uint16"
+        },
+        "description": "Get all driving settings."
+    },
+
+    "SubscribeDrivingSettingsEvents": {
+        "major": 4712,
+        "minor": 9,
+        "description": "Subscribe to driving settings events."
+    },
+
+    "GetReversingDistance": {
+        "major": 4716,
+        "minor": 0,
+        "responseType": "uint16",
+        "description": "Get distance from charging station to first starting point in millimeters."
+    },
+
+    "SetReversingDistance": {
+        "major": 4716,
+        "minor": 1,
+        "requestType": {
+            "distance": "uint16"
+        },
+        "description": "Set distance from charging station to first starting point in millimeters."
+    },
+
+    "GetAllLeaveChargingStationSettings": {
+        "major": 4716,
+        "minor": 15,
+        "responseType": {
+            "reversingDistance": "uint16"
+        },
+        "description": "Get all leave charging station settings."
+    },
+
+    "GetStartingPoint": {
+        "major": 4706,
+        "minor": 21,
+        "requestType": {
+            "startingPointId": "uint8"
+        },
+        "responseType": {
+            "enabled": "bool",
+            "proportion": "uint8",
+            "wire": "uint8",
+            "distance": "uint16",
+            "corridorCut": "bool"
+        },
+        "description": "Get manual starting point settings."
+    },
+
+    "SetStartingPointEnabled": {
+        "major": 4706,
+        "minor": 7,
+        "requestType": {
+            "startingPointId": "uint8",
+            "enabled": "bool"
+        },
+        "description": "Enable or disable a manual starting point."
+    },
+
+    "SetStartingPointWire": {
+        "major": 4706,
+        "minor": 9,
+        "requestType": {
+            "startingPointId": "uint8",
+            "wire": "uint8"
+        },
+        "description": "Set the wire followed to reach a manual starting point."
+    },
+
+    "SetStartingPointDistance": {
+        "major": 4706,
+        "minor": 11,
+        "requestType": {
+            "startingPointId": "uint8",
+            "distance": "uint16"
+        },
+        "description": "Set manual starting point distance from charging station in meters."
+    },
+
+    "SetStartingPointProportion": {
+        "major": 4706,
+        "minor": 13,
+        "requestType": {
+            "startingPointId": "uint8",
+            "proportion": "uint8"
+        },
+        "description": "Set manual starting point mowing share in percent."
+    },
+
+    "SetStartingPointCorridorCut": {
+        "major": 4706,
+        "minor": 27,
+        "requestType": {
+            "startingPointId": "uint8",
+            "corridorCut": "bool"
+        },
+        "description": "Enable or disable CorridorCut for a manual starting point."
+    },
+
+    "GetSpotCutting": {
+        "major": 4,
+        "minor": 13,
+        "responseType": "uint8",
+        "description": "Get spot cutting activation state."
+    },
+
+    "PrepareSpotCutting": {
+        "major": 4710,
+        "minor": 7,
+        "description": "Prepare SpotCut before starting a manual mowing override."
+    },
+
+    "GetSpotCuttingState": {
+        "major": 4710,
+        "minor": 9,
+        "responseType": "uint8",
+        "description": "Get prepared SpotCut state."
+    },
+
+    "StartSpotCutting": {
+        "major": 14,
+        "minor": 20,
+        "responseType": "uint16",
+        "description": "Start spot cutting."
+    },
+
+    "StopSpotCutting": {
+        "major": 14,
+        "minor": 24,
+        "responseType": "uint16",
+        "description": "Stop spot cutting."
+    },
+
+    "GetSwVersionStringBoot": {
+        "major": 4720,
+        "minor": 0,
+        "responseType": "ascii",
+        "description": "Boot software version string."
+    },
+
+    "GetSwVersionStringAppl": {
+        "major": 4720,
+        "minor": 1,
+        "responseType": "ascii",
+        "description": "Application software version string."
+    },
+
+    "GetSwVersionStringSub": {
+        "major": 4720,
+        "minor": 2,
+        "responseType": "ascii",
+        "description": "Sub software version string."
+    },
+
+    "GetProductionTime": {
+        "major": 4758,
+        "minor": 1,
+        "responseType": "tUnixTime",
+        "description": "Mower production time."
+    },
+
+    "GetNodeIprId": {
+        "major": 4758,
+        "minor": 2,
+        "responseType": "ascii",
+        "description": "Node IPR ID."
+    },
+
+    "GetHusqvarnaId": {
+        "major": 4758,
+        "minor": 3,
+        "responseType": "ascii",
+        "description": "Husqvarna ID."
+    },
+
+    "GetHwSerialNumber": {
+        "major": 4758,
+        "minor": 4,
+        "responseType": "ascii",
+        "description": "Hardware serial number."
+    },
+
+    "GetHardwareRevision": {
+        "major": 4758,
+        "minor": 5,
+        "responseType": "uint16",
+        "description": "Hardware revision."
+    },
+    "GetSupportedAccessories": {
+        "major": 4166,
+        "minor": 8,
+        "responseType": "uint16",
+        "description": "Supported mower accessory bitmask."
+    },
+    "GetChargingStationLoopSignalGeneration": {
+        "major": 5370,
+        "minor": 1,
+        "responseType": "bool",
+        "description": "Charging station loop signal generation or eco mode state."
+    },
+    "SetChargingStationLoopSignalGeneration": {
+        "major": 5370,
+        "minor": 2,
+        "requestType": {
+            "enabled": "bool"
+        },
+        "description": "Enable or disable charging station loop signal generation or eco mode."
+    },
+    "GenerateLoopSignal": {
+        "major": 5356,
+        "minor": 3,
+        "requestType": {
+            "signalType": "uint8"
+        },
+        "description": "Generate a new loop signal between mower and charging station."
     }
 }
