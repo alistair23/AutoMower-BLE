@@ -106,6 +106,16 @@ class TestRequestMethods(unittest.TestCase):
             1,
         )
 
+    def test_decode_get_override_response(self):
+        command = Command(1197489078, self.protocol["GetOverride"])
+        decoded = command.parse_response(
+            bytearray.fromhex("02fd2000b63b604701db01af0a101500000d000140cd6764201c000000000000bc03")
+        )
+        self.assertEqual(decoded["action"], 1)
+        self.assertEqual(decoded["startTime"], 1684524352)
+        self.assertEqual(decoded["duration"], 7200)
+        self.assertEqual(decoded["unknown"], 0)
+
 
 if __name__ == "__main__":
     unittest.main()
