@@ -8,6 +8,7 @@ how the request and response classes can be used.
 
 import argparse
 import asyncio
+import contextlib
 import datetime as dt
 import logging
 
@@ -17,6 +18,7 @@ from automower_ble.protocol import (
     MowerState,
     MowerActivity,
     ModeOfOperation,
+    OverrideAction,
     ResponseResult,
     TaskInformation,
 )
@@ -27,11 +29,18 @@ from bleak import BleakScanner
 
 logger = logging.getLogger(__name__)
 
+MAX_SCHEDULE_TASKS = 15
+SECONDS_PER_MINUTE = 60
+MINUTES_PER_DAY = 24 * 60
+SPOT_CUT_DURATION_SECONDS = 30 * SECONDS_PER_MINUTE
+
 
 class Mower(BLEClient):
     def __init__(self, channel_id: int, address, pin=None):
         super().__init__(channel_id, address, pin)
         self.keep_alive_event = asyncio.Event()
+        self.task: asyncio.Task | None = None
+        self._connect_lock = asyncio.Lock()
 
     async def connect(self, device) -> ResponseResult:
         """
@@ -39,10 +48,25 @@ class Mower(BLEClient):
 
         Returns a ResponseResult
         """
-        status = await super().connect(device)
-        if status == ResponseResult.OK:
+        if self.is_connected():
+            self._ensure_keep_alive()
+            return ResponseResult.OK
+
+        async with self._connect_lock:
+            if self.is_connected():
+                self._ensure_keep_alive()
+                return ResponseResult.OK
+
+            status = await super().connect(device)
+            if status == ResponseResult.OK:
+                self._ensure_keep_alive()
+            return status
+
+    def _ensure_keep_alive(self) -> None:
+        """Start one keep-alive task for the active mower connection."""
+        self.keep_alive_event.clear()
+        if self.task is None or self.task.done():
             self.task = asyncio.create_task(self._keep_alive())
-        return status
 
     async def disconnect(self):
         """
@@ -50,7 +74,14 @@ class Mower(BLEClient):
         `connect()` before the Python script exits
         """
         self.keep_alive_event.set()
-        return await super().disconnect()
+        try:
+            return await super().disconnect()
+        finally:
+            if self.task is not None and self.task is not asyncio.current_task():
+                self.task.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await self.task
+                self.task = None
 
     async def _keep_alive(self):
         """
@@ -80,7 +111,7 @@ class Mower(BLEClient):
         if command.validate_command_response(response) is False:
             # Just log if the response is invalid as this has been seen with user
             # logs from official apps. I.e. it is somewhat expected.
-            logger.warning("Response failed validation")
+            logger.warning("Response failed validation for %s", command_name)
 
         response_dict = command.parse_response(response)
         if (
@@ -88,6 +119,65 @@ class Mower(BLEClient):
         ):  # If there is only one key in the response, return the value
             return response_dict["response"]
         return response_dict
+
+    async def command_response(
+        self, command_name: str, warn_on_error: bool = True, **kwargs
+    ):
+        """
+        Send a command and return the mower response result with parsed data.
+
+        This is useful for command buttons where Home Assistant should surface a
+        clear command failure instead of only logging a low-level protocol warning.
+        """
+        command = Command(self.channel_id, (await self.get_protocol())[command_name])
+        request = command.generate_request(**kwargs)
+        response = await self._request_response(request)
+        if response is None:
+            return ResponseResult.UNKNOWN_ERROR, None
+
+        result = ResponseResult(response[16])
+        if result is not ResponseResult.OK:
+            if warn_on_error:
+                logger.warning("%s returned %s", command_name, result.name)
+            else:
+                logger.debug("%s returned %s", command_name, result.name)
+            return result, None
+
+        try:
+            response_dict = command.parse_response(response)
+        except ValueError as err:
+            logger.debug("%s returned unparsable payload: %s", command_name, err)
+            return result, None
+        if response_dict is not None and len(response_dict) == 1:
+            return result, response_dict["response"]
+        return result, response_dict
+
+    async def command_response_locked(
+        self, command_name: str, warn_on_error: bool = True, **kwargs
+    ):
+        """Send a command while the caller already holds the BLE command lock."""
+        command = Command(self.channel_id, (await self.get_protocol())[command_name])
+        request = command.generate_request(**kwargs)
+        response = await self._request_response_locked(request)
+        if response is None:
+            return ResponseResult.UNKNOWN_ERROR, None
+
+        result = ResponseResult(response[16])
+        if result is not ResponseResult.OK:
+            if warn_on_error:
+                logger.warning("%s returned %s", command_name, result.name)
+            else:
+                logger.debug("%s returned %s", command_name, result.name)
+            return result, None
+
+        try:
+            response_dict = command.parse_response(response)
+        except ValueError as err:
+            logger.debug("%s returned unparsable payload: %s", command_name, err)
+            return result, None
+        if response_dict is not None and len(response_dict) == 1:
+            return result, response_dict["response"]
+        return result, response_dict
 
     async def get_manufacturer(self) -> str | None:
         """Get the mower manufacturer"""
@@ -132,12 +222,22 @@ class Mower(BLEClient):
             return None
         return MowerState(state)
 
-    async def mower_next_start_time(self) -> dt.datetime | None:
+    async def mower_next_start_time(
+        self, timezone: dt.tzinfo | None = None
+    ) -> dt.datetime | None:
         """Query the mower next start time"""
         next_start_time = await self.command("GetNextStartTime")
         if next_start_time is None or next_start_time == 0:
             return None
-        return dt.datetime.fromtimestamp(next_start_time, dt.UTC)
+        # The mower reports this value as seconds since epoch in local time, not
+        # UTC. Decode the timestamp as a UTC wall-clock value, then attach the
+        # desired local timezone so Home Assistant displays the actual schedule.
+        local_time = dt.datetime.fromtimestamp(next_start_time, dt.UTC).replace(
+            tzinfo=None
+        )
+        return local_time.replace(
+            tzinfo=timezone or dt.datetime.now().astimezone().tzinfo
+        )
 
     async def mower_activity(self) -> MowerActivity | None:
         """Query the mower activity"""
@@ -146,21 +246,106 @@ class Mower(BLEClient):
             return None
         return MowerActivity(activity)
 
-    async def mower_override(self, duration_hours: float = 3.0) -> None:
+    async def mower_mode(self) -> ModeOfOperation | None:
+        """Query the mower mode of operation."""
+        mode = await self.command("GetMode")
+        if mode is None:
+            return None
+        try:
+            return ModeOfOperation(mode)
+        except ValueError:
+            logger.debug("Unknown mower mode: %s", mode)
+            return None
+
+    async def mower_override_status(self) -> dict[str, int | OverrideAction] | None:
+        """Query the current mower override status."""
+        result, override = await self.command_response(
+            "GetOverride", warn_on_error=False
+        )
+        if result is not ResponseResult.OK or override is None:
+            return None
+
+        try:
+            action = OverrideAction(override["action"])
+        except ValueError:
+            logger.debug("Unknown mower override action: %s", override["action"])
+            action = OverrideAction.NONE
+
+        return {
+            "action": action,
+            "startTime": override["startTime"],
+            "duration": override["duration"],
+            "reserved": override["reserved"],
+        }
+
+    @staticmethod
+    def is_permanently_parked_state(
+        mode: ModeOfOperation | None, override: dict | None
+    ) -> bool:
+        """Return true if mode/override represent park until further notice."""
+        if mode is ModeOfOperation.HOME:
+            return True
+        return (
+            override is not None
+            and override.get("action") is OverrideAction.FORCEDPARK
+            and override.get("duration") == 0
+        )
+
+    async def mower_is_permanently_parked(self) -> bool:
+        """Return true if the mower is parked until further notice."""
+        mode = await self.mower_mode()
+        override = await self.mower_override_status()
+        return self.is_permanently_parked_state(mode, override)
+
+    async def mower_resume_schedule(self) -> ResponseResult:
+        """Return the mower to scheduled/automatic operation."""
+        result, _ = await self.command_response("ClearOverride", warn_on_error=False)
+        if result is not ResponseResult.OK:
+            logger.debug(
+                "ClearOverride returned %s while resuming schedule", result.name
+            )
+
+        result, _ = await self.command_response("SetMode", mode=ModeOfOperation.AUTO)
+        return result
+
+    async def mower_park_permanently(self) -> ResponseResult:
+        """Park the mower until further notice."""
+        result, _ = await self.command_response("SetMode", mode=ModeOfOperation.HOME)
+        return result
+
+    async def mower_override(self, duration_hours: float = 3.0) -> ResponseResult:
         """
         Force the mower to run for the specified duration in hours.
         """
         if duration_hours <= 0:
             raise ValueError("Duration must be greater than 0")
 
-        # Set mode of operation to auto:
-        await self.command("SetMode", mode=ModeOfOperation.AUTO)
+        async with self.lock:
+            result, _ = await self.command_response_locked(
+                "ClearOverride", warn_on_error=False
+            )
+            if result is not ResponseResult.OK:
+                logger.debug(
+                    "ClearOverride returned %s while starting manual mowing",
+                    result.name,
+                )
 
-        # Set the duration of operation:
-        await self.command("SetOverrideMow", duration=int(duration_hours * 3600))
+            result, _ = await self.command_response_locked(
+                "SetMode", mode=ModeOfOperation.AUTO
+            )
+            if result is not ResponseResult.OK:
+                return result
 
-        # Request trigger to start, the response validation is expected to fail
-        await self.command("StartTrigger")
+            result, _ = await self.command_response_locked(
+                "SetOverrideMow", duration=int(duration_hours * 3600)
+            )
+            if result is not ResponseResult.OK:
+                return result
+
+            return await self._start_trigger_locked(
+                "manual mowing",
+                (MowerActivity.GOING_OUT, MowerActivity.MOWING),
+            )
 
     async def mower_pause(self):
         await self.command("Pause")
@@ -169,22 +354,133 @@ class Mower(BLEClient):
         # The response validation is expected to fail
         await self.command("StartTrigger")
 
-    async def mower_park(self):
-        await self.command("SetOverrideParkUntilNextStart")
+    async def mower_spot_cut(self) -> ResponseResult:
+        """
+        Start spot cutting.
 
-        # Request trigger to start, the response validation is expected to fail
-        await self.command("StartTrigger")
+        The dedicated StartSpotCutting command is rejected with INVALID_ID on
+        some Gardena models. The official app first arms SpotCut, then starts
+        a manual mowing override.
+        """
+        async with self.lock:
+            result, _ = await self.command_response_locked("Pause", warn_on_error=False)
+            if result is ResponseResult.OK:
+                await asyncio.sleep(1)
+            elif result not in (
+                ResponseResult.UNKNOWN_ERROR,
+                ResponseResult.NOT_ALLOWED,
+            ):
+                logger.debug("Pause returned %s while starting SpotCut", result.name)
+
+            result, _ = await self.command_response_locked(
+                "ClearOverride", warn_on_error=False
+            )
+            if result is not ResponseResult.OK:
+                logger.debug(
+                    "ClearOverride returned %s while starting SpotCut", result.name
+                )
+
+            result, _ = await self.command_response_locked(
+                "SetMode", mode=ModeOfOperation.AUTO
+            )
+            if result is not ResponseResult.OK:
+                return result
+
+            result, _ = await self.command_response_locked("PrepareSpotCutting")
+            if result is not ResponseResult.OK:
+                return result
+
+            result, _ = await self.command_response_locked(
+                "SetOverrideMow", duration=SPOT_CUT_DURATION_SECONDS
+            )
+            if result is not ResponseResult.OK:
+                return result
+
+            result, _ = await self.command_response_locked(
+                "StartTrigger", warn_on_error=False
+            )
+            if result is not ResponseResult.OK:
+                return await self._start_trigger_result_locked(
+                    result,
+                    "SpotCut",
+                    (MowerActivity.MOWING,),
+                )
+
+            return result
+
+    async def _start_trigger_locked(
+        self, context: str, accepted_activities: tuple[MowerActivity, ...]
+    ) -> ResponseResult:
+        """Send StartTrigger and tolerate app-observed successful UNKNOWN_ERROR."""
+        result, _ = await self.command_response_locked(
+            "StartTrigger", warn_on_error=False
+        )
+        if result is ResponseResult.OK:
+            return result
+
+        return await self._start_trigger_result_locked(
+            result,
+            context,
+            accepted_activities,
+        )
+
+    async def _start_trigger_result_locked(
+        self,
+        result: ResponseResult,
+        context: str,
+        accepted_activities: tuple[MowerActivity, ...],
+    ) -> ResponseResult:
+        """Validate a StartTrigger result against the actual mower state."""
+        if result is ResponseResult.UNKNOWN_ERROR:
+            await asyncio.sleep(2)
+            _, state = await self.command_response_locked(
+                "GetState", warn_on_error=False
+            )
+            _, activity = await self.command_response_locked(
+                "GetActivity", warn_on_error=False
+            )
+            if state == MowerState.IN_OPERATION and activity in accepted_activities:
+                logger.debug(
+                    "StartTrigger returned UNKNOWN_ERROR but mower accepted %s",
+                    context,
+                )
+                return ResponseResult.OK
+
+        logger.warning(
+            "StartTrigger returned %s while starting %s", result.name, context
+        )
+        return result
+
+    async def mower_stop_spot_cut(self) -> ResponseResult:
+        """Stop SpotCut by pausing the mower, matching the app-observed flow."""
+        result, _ = await self.command_response("Pause")
+        return result
+
+    async def mower_park(self) -> ResponseResult:
+        result, task_count = await self.command_response(
+            "GetNumberOfTasks", warn_on_error=False
+        )
+        if result is not ResponseResult.OK:
+            return result
+
+        if task_count:
+            result, _ = await self.command_response("SetOverrideParkUntilNextStart")
+            return result
+
+        return await self.mower_park_permanently()
 
     async def get_task(self, taskid: int) -> TaskInformation | None:
         """
         Get information about a specific task
         """
-        task = await self.command("GetTask", taskId=taskid)
-        if task is None:
+        result, task = await self.command_response(
+            "GetTask", warn_on_error=False, taskId=taskid
+        )
+        if result is not ResponseResult.OK or task is None:
             return None
         return TaskInformation(
-            task["start"],
-            task["duration"],
+            task["start"] // SECONDS_PER_MINUTE,
+            (task["duration"] + SECONDS_PER_MINUTE - 1) // SECONDS_PER_MINUTE,
             task["useOnMonday"],
             task["useOnTuesday"],
             task["useOnWednesday"],
@@ -193,6 +489,107 @@ class Mower(BLEClient):
             task["useOnSaturday"],
             task["useOnSunday"],
         )
+
+    async def get_tasks(self) -> list[TaskInformation]:
+        """Get all weekly schedule tasks from the mower."""
+        task_count = await self.command("GetNumberOfTasks")
+        if task_count is None:
+            return []
+        logger.debug("Mower reported %s schedule tasks", task_count)
+
+        for first_task_id in (0, 1):
+            tasks: list[TaskInformation] = []
+            for task_id in range(first_task_id, first_task_id + task_count):
+                task = await self.get_task(task_id)
+                if task is None:
+                    logger.debug("Unable to read schedule task %s", task_id)
+                    break
+                tasks.append(task)
+            if len(tasks) == task_count:
+                logger.debug(
+                    "Read %s schedule tasks starting at task id %s",
+                    len(tasks),
+                    first_task_id,
+                )
+                return tasks
+
+        logger.debug("Unable to read mower schedule tasks")
+        return []
+
+    async def set_tasks(self, tasks: list[TaskInformation]) -> None:
+        """Replace the weekly schedule tasks on the mower."""
+        if len(tasks) > MAX_SCHEDULE_TASKS:
+            raise ValueError(
+                f"A maximum of {MAX_SCHEDULE_TASKS} schedule tasks is supported"
+            )
+
+        for task in tasks:
+            if (
+                task.start_time_in_minutes < 0
+                or task.start_time_in_minutes >= MINUTES_PER_DAY
+            ):
+                raise ValueError("Schedule start time must be within one day")
+            if (
+                task.duration_in_minutes <= 0
+                or task.duration_in_minutes > MINUTES_PER_DAY
+            ):
+                raise ValueError(
+                    "Schedule duration must be between 1 minute and 24 hours"
+                )
+
+        was_permanently_parked = False
+        if tasks:
+            was_permanently_parked = await self.mower_is_permanently_parked()
+
+        await self._expect_ok("StartTaskTransaction")
+        await self._expect_ok("DeleteAllTask")
+
+        for task in tasks:
+            logger.debug(
+                "Writing schedule task start=%s duration=%s days=%s",
+                task.start_time_in_minutes,
+                task.duration_in_minutes,
+                {
+                    "monday": bool(task.on_monday),
+                    "tuesday": bool(task.on_tuesday),
+                    "wednesday": bool(task.on_wednesday),
+                    "thursday": bool(task.on_thursday),
+                    "friday": bool(task.on_friday),
+                    "saturday": bool(task.on_saturday),
+                    "sunday": bool(task.on_sunday),
+                },
+            )
+            await self._expect_ok(
+                "AddTask",
+                start=int(task.start_time_in_minutes) * SECONDS_PER_MINUTE,
+                duration=int(task.duration_in_minutes) * SECONDS_PER_MINUTE,
+                useOnMonday=bool(task.on_monday),
+                useOnTuesday=bool(task.on_tuesday),
+                useOnWednesday=bool(task.on_wednesday),
+                useOnThursday=bool(task.on_thursday),
+                useOnFriday=bool(task.on_friday),
+                useOnSaturday=bool(task.on_saturday),
+                useOnSunday=bool(task.on_sunday),
+                unknown=0,
+            )
+
+        await self._expect_ok("CommitTaskTransaction")
+        if tasks and was_permanently_parked:
+            result = await self.mower_resume_schedule()
+            if result is not ResponseResult.OK:
+                raise RuntimeError(f"SetMode returned {result.name}")
+
+    async def clear_tasks(self) -> None:
+        """Remove all weekly schedule tasks from the mower."""
+        await self._expect_ok("StartTaskTransaction")
+        await self._expect_ok("DeleteAllTask")
+        await self._expect_ok("CommitTaskTransaction")
+
+    async def _expect_ok(self, command_name: str, **kwargs) -> None:
+        """Send a command and raise when the mower rejects it."""
+        result, _ = await self.command_response(command_name, **kwargs)
+        if result is not ResponseResult.OK:
+            raise RuntimeError(f"{command_name} returned {result.name}")
 
 
 async def main(mower: Mower):
