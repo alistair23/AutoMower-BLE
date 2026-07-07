@@ -539,12 +539,11 @@ class BLEClient:
         `connect()` before the Python script exits
         """
 
-        await self.client.stop_notify(self.read_char)
-        await self.queue.put(None)
-
         logger.info("disconnecting...")
         await self.client.disconnect()
         logger.info("disconnected")
+
+        await self.queue.put(None)
 
     def generate_request_setup_channel_id(self) -> bytearray:
         """
