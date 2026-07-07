@@ -111,7 +111,7 @@ class Mower(BLEClient):
         if command.validate_command_response(response) is False:
             # Just log if the response is invalid as this has been seen with user
             # logs from official apps. I.e. it is somewhat expected.
-            logger.warning("Response failed validation")
+            logger.warning("Response failed validation for %s", command_name)
 
         response_dict = command.parse_response(response)
         if (
@@ -446,7 +446,9 @@ class Mower(BLEClient):
                 )
                 return ResponseResult.OK
 
-        logger.warning("StartTrigger returned %s while starting %s", result.name, context)
+        logger.warning(
+            "StartTrigger returned %s while starting %s", result.name, context
+        )
         return result
 
     async def mower_stop_spot_cut(self) -> ResponseResult:

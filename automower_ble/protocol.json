@@ -77,11 +77,25 @@
         },
         "description": "Set SensorControl mowing time adjustment sensitivity."
     },
-    "GetFrostSensorEnabled": {
+    "GetFrostSensorEnabledLegacy": {
         "major": 4476,
         "minor": 6,
         "responseType": "bool",
+        "description": "Legacy frost sensor enabled state."
+    },
+    "GetFrostSensorEnabled": {
+        "major": 4692,
+        "minor": 6,
+        "responseType": "bool",
         "description": "Get frost sensor enabled state."
+    },
+    "SetFrostSensorEnabled": {
+        "major": 4692,
+        "minor": 5,
+        "requestType": {
+            "enabled": "bool"
+        },
+        "description": "Enable or disable the frost sensor."
     },
     "SetMode": {
         "major": 4586,
@@ -352,6 +366,11 @@
         "minor": 6,
         "responseType": "uint32",
         "description": "Number of charging cycles completed by the mower."
+    },
+    "ResetCuttingBladeUsageTime": {
+        "major": 4726,
+        "minor": 8,
+        "description": "Reset cutting blade usage time."
     },
     "GetNumberOfMessages": {
         "major": 4730,
@@ -658,6 +677,42 @@
         "responseType": "uint16",
         "description": "Supported mower accessory bitmask."
     },
+    "GenerateLoopSignal": {
+        "major": 4692,
+        "minor": 2,
+        "description": "Generate a new loop signal between mower and charging station."
+    },
+    "SetGarageEnabled": {
+        "major": 4692,
+        "minor": 3,
+        "requestType": {
+            "enabled": "bool"
+        },
+        "description": "Enable or disable avoid-garage behavior."
+    },
+    "GetGarageEnabled": {
+        "major": 4692,
+        "minor": 4,
+        "responseType": "bool",
+        "description": "Avoid-garage behavior state."
+    },
+    "SetAntiCollisionRadarEnabled": {
+        "major": 6050,
+        "minor": 3,
+        "requestType": {
+            "enabled": "bool"
+        },
+        "description": "Enable or disable Anti-collision Radar."
+    },
+    "GetAntiCollisionRadar": {
+        "major": 6050,
+        "minor": 4,
+        "responseType": {
+            "enabled": "bool",
+            "available": "bool"
+        },
+        "description": "Anti-collision Radar enabled and available state."
+    },
     "GetChargingStationLoopSignalGeneration": {
         "major": 5370,
         "minor": 1,
@@ -672,12 +727,12 @@
         },
         "description": "Enable or disable charging station loop signal generation or eco mode."
     },
-    "GenerateLoopSignal": {
+    "GenerateLoopSignalLegacy": {
         "major": 5356,
         "minor": 3,
         "requestType": {
             "signalType": "uint8"
         },
-        "description": "Generate a new loop signal between mower and charging station."
+        "description": "Legacy loop signal generation command."
     }
 }
