@@ -106,6 +106,13 @@ class TestRequestMethods(unittest.TestCase):
             1,
         )
 
+    def test_decode_empty_response(self):
+        command = Command(1197489078, self.protocol["GetMessage"])
+        response = command.parse_response(
+            bytearray.fromhex("02fd1100b63b604701db01af0a101500000000bc03")
+        )
+        self.assertIsNone(response)
+
 
 if __name__ == "__main__":
     unittest.main()
