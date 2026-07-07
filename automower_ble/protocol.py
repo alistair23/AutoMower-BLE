@@ -17,6 +17,12 @@ logger = logging.getLogger(__name__)
 
 GARDENA_WRITE_CHAR = "98bd0002-0b0e-421a-84e5-ddbf75dc6de4"
 GARDENA_READ_CHAR = "98bd0003-0b0e-421a-84e5-ddbf75dc6de4"
+GARDENA_PROTOCOL_DESCRIPTOR_CHAR = "98bd0004-0b0e-421a-84e5-ddbf75dc6de4"
+GATT_AUTH_ERROR_TEXT = (
+    "Insufficient authentication",
+    "Insufficient authorization",
+    "Insufficient encryption",
+)
 
 
 class ModeOfOperation(IntEnum):
@@ -75,6 +81,18 @@ class ResponseResult(IntEnum):
     DEVICE_BUSY = 8
     INVALID_PIN = 9
     MOWER_BLOCKED = 10
+
+
+def _response_result_label(value: int) -> str:
+    try:
+        result = ResponseResult(value)
+    except ValueError:
+        return f"UNKNOWN_RESULT({value})"
+    return f"{result.name}({value})"
+
+
+def _is_gatt_auth_error(err: Exception) -> bool:
+    return any(text in str(err) for text in GATT_AUTH_ERROR_TEXT)
 
 
 class TaskInformation:
@@ -287,7 +305,12 @@ class Command:
         if (
             response_data[16] != 0x00
         ):  # result: OK(0), UNKNOWN_ERROR(1), INVALID_VALUE(2), OUT_OF_RANGE(3), NOT_AVAILABLE(4), NOT_ALLOWED(5), INVALID_GROUP(6), INVALID_ID(7), DEVICE_BUSY(8), INVALID_PIN(9), MOWER_BLOCKED(10);
-            logger.warning("Non zero response result: %d", response_data[16])
+            logger.warning(
+                "Command %d/%d returned %s",
+                self.major,
+                self.minor,
+                _response_result_label(response_data[16]),
+            )
             return False
 
         return True
@@ -373,6 +396,7 @@ class BLEClient:
             if chunk is None:
                 return None
             data += chunk
+
         length = data[2] + 4
 
         logger.debug("Waiting for %d bytes", length)
@@ -432,6 +456,10 @@ class BLEClient:
 
         Returns a ResponseResult
         """
+        if self.is_connected():
+            logger.debug("Already connected")
+            return ResponseResult.OK
+
         logger.info("starting scan...")
 
         if device is None:
@@ -454,8 +482,8 @@ class BLEClient:
         try:
             await self.client.pair()
             logger.info("paired")
-        except Exception as err:
-            logger.debug("Pairing not completed, continuing anyway: %s", err)
+        except BleakError as err:
+            logger.info("Pairing failed, continuing with protocol handshake: %s", err)
             if not self.client.is_connected:
                 return ResponseResult.UNKNOWN_ERROR
 
@@ -497,6 +525,12 @@ class BLEClient:
                             ",".join(char.properties),
                             e,
                         )
+                        if (
+                            char.uuid == "98bd0002-0b0e-421a-84e5-ddbf75dc6de4"
+                            or char.uuid == "98bd0003-0b0e-421a-84e5-ddbf75dc6de4"
+                        ):
+                            return ResponseResult.NOT_ALLOWED
+
                 else:
                     logger.debug(
                         "  [Characteristic] %s (%s)", char, ",".join(char.properties)
@@ -517,11 +551,32 @@ class BLEClient:
         try:
             await self.client.start_notify(self.read_char, notification_handler)
             self._notify_started = True
-        except Exception as err:
-            logger.warning("Unable to subscribe to mower notifications: %s", err)
-            if self.is_connected():
-                await self.disconnect()
-            return ResponseResult.NOT_ALLOWED
+        except BleakError as err:
+            if _is_gatt_auth_error(err):
+                logger.info(
+                    "Notification subscription needs BLE authentication; "
+                    "retrying pairing once"
+                )
+                try:
+                    await self.client.pair()
+                    await asyncio.sleep(1.0)
+                    await self.client.start_notify(self.read_char, notification_handler)
+                    self._notify_started = True
+                except BleakError as retry_err:
+                    logger.warning(
+                        "Unable to subscribe to mower notifications after "
+                        "pairing retry: %s",
+                        retry_err,
+                    )
+                    if self.is_connected():
+                        await self.disconnect()
+                    return ResponseResult.NOT_ALLOWED
+            else:
+                logger.warning("Unable to subscribe to mower notifications: %s", err)
+                if self.is_connected():
+                    await self.disconnect()
+                return ResponseResult.NOT_ALLOWED
+
         await asyncio.sleep(5.0)
 
         request = self.generate_request_setup_channel_id()
@@ -556,11 +611,10 @@ class BLEClient:
         return bool(self.client and self.client.is_connected)
 
     async def probe_gatts(self, device):
-        self.write_char = None
-        self.read_char = None
-        self._notify_started = False
-
         logger.info("connecting to device...")
+        if device is None:
+            raise BleakError(f"Could not find device with address '{self.address}'")
+
         client = await establish_connection(
             BleakClientWithServiceCache,
             device,
@@ -573,39 +627,58 @@ class BLEClient:
         model = None
         device_type = None
 
-        for service in client.services:
-            logger.debug("[Service] %s", service)
+        try:
+            for service in client.services:
+                logger.debug("[Service] %s", service)
 
-            if service.uuid == "98bd0001-0b0e-421a-84e5-ddbf75dc6de4":
-                manufacture = service.description
+                if service.uuid == "98bd0001-0b0e-421a-84e5-ddbf75dc6de4":
+                    manufacture = service.description
 
-            for char in service.characteristics:
-                if "read" in char.properties:
-                    try:
-                        value = await client.read_gatt_char(char.uuid)
-                        logger.debug(
-                            "  [Characteristic] %s (%s), Value: %r",
-                            char,
-                            ",".join(char.properties),
-                            value,
-                        )
-                        if char.uuid == "00002a00-0000-1000-8000-00805f9b34fb":
-                            model = value.decode()
-                        if char.uuid == "98bd0004-0b0e-421a-84e5-ddbf75dc6de4":
-                            device_type = value.rstrip(b"\x00").decode()
-                    except Exception as e:
-                        logger.error(
-                            "  [Characteristic] %s (%s), Error: %s",
-                            char,
-                            ",".join(char.properties),
-                            e,
-                        )
-                else:
-                    logger.debug(
-                        "  [Characteristic] %s (%s)", char, ",".join(char.properties)
+                for char in service.characteristics:
+                    properties = ",".join(char.properties)
+                    should_read = char.uuid in (
+                        "00002a00-0000-1000-8000-00805f9b34fb",
+                        GARDENA_PROTOCOL_DESCRIPTOR_CHAR,
                     )
 
-        await client.disconnect()
+                    if char.uuid in (GARDENA_WRITE_CHAR, GARDENA_READ_CHAR):
+                        logger.debug("  [Characteristic] %s (%s)", char, properties)
+                        continue
+
+                    if "read" in char.properties and should_read:
+                        try:
+                            value = await client.read_gatt_char(char.uuid)
+                            logger.debug(
+                                "  [Characteristic] %s (%s), Value: %r",
+                                char,
+                                properties,
+                                value,
+                            )
+                        except Exception as e:
+                            logger.debug(
+                                "  [Characteristic] %s (%s), Error: %s",
+                                char,
+                                properties,
+                                e,
+                            )
+                            continue
+
+                        if char.uuid == "00002a00-0000-1000-8000-00805f9b34fb":
+                            model = value.decode()
+
+                        if char.uuid == GARDENA_PROTOCOL_DESCRIPTOR_CHAR:
+                            device_type = value.rstrip(b"\x00").decode()
+
+                    elif "read" in char.properties:
+                        logger.debug(
+                            "  [Characteristic] %s (%s), Value skipped during probe",
+                            char,
+                            properties,
+                        )
+                    else:
+                        logger.debug("  [Characteristic] %s (%s)", char, properties)
+        finally:
+            await client.disconnect()
 
         return (manufacture, device_type, model)
 
@@ -688,7 +761,10 @@ class BLEClient:
         if (
             response_data[16] != 0x00
         ):  # result: OK(0), UNKNOWN_ERROR(1), INVALID_VALUE(2), OUT_OF_RANGE(3), NOT_AVAILABLE(4), NOT_ALLOWED(5), INVALID_GROUP(6), INVALID_ID(7), DEVICE_BUSY(8), INVALID_PIN(9), MOWER_BLOCKED(10);
-            logger.warning("Non zero response result: %d", response_data[16])
+            logger.warning(
+                "Protocol response returned %s",
+                _response_result_label(response_data[16]),
+            )
             return False
 
         return True
