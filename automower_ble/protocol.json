@@ -176,7 +176,7 @@
             "useOnFriday": "bool",
             "useOnSaturday": "bool",
             "useOnSunday": "bool",
-            "unknown": "uint16"
+            "unknown": "uint32"
         },
         "description": "Get a specified task"
     },

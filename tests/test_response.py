@@ -77,7 +77,7 @@ class TestRequestMethods(unittest.TestCase):
         response = Command(1197489078, self.protocol["GetTask"])
         decoded = response.parse_response(
             bytearray.fromhex(
-                "02fd240025be246a010701af5212050000130000e1000038310000010001010001013003"
+                "02fd260025be246a010701af5212050000130000e100003831000001000101000101000000003003"
             )
         )
 
@@ -96,6 +96,7 @@ class TestRequestMethods(unittest.TestCase):
         self.assertEqual(decoded["useOnFriday"], 0)
         self.assertEqual(decoded["useOnSaturday"], 1)
         self.assertEqual(decoded["useOnSunday"], 1)
+        self.assertEqual(decoded["unknown"], 0)
 
     def test_decode_get_number_of_tasks_response(self):
         response = Command(0x13A51453, self.protocol["GetNumberOfTasks"])
