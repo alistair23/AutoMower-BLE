@@ -91,7 +91,8 @@
         "responseType": {
             "action": "uint8",
             "startTime": "tUnixTime",
-            "duration": "uint32"
+            "duration": "uint32",
+            "unknown": "uint32"
         },
         "description": "Override status."
     },
