@@ -186,6 +186,10 @@ class Command:
     def parse_response(self, response_data: bytearray) -> dict[str, int | str] | None:
         response_length = response_data[17]
         data = response_data[19 : 19 + response_length]
+        if response_length == 0:
+            # A response length of 0 indicates that no data is available (e.g. GetMessage when there are no errors)
+            # This is a valid "no data available" response, not an error.
+            return None
         response: dict[str, int | str] = {}
         dpos = 0  # data position
         for name, dtype in self.response_data_type.items():
