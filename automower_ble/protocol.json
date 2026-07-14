@@ -83,6 +83,14 @@
         "responseType": "bool",
         "description": "Legacy frost sensor enabled state."
     },
+    "SetFrostSensorEnabledLegacy": {
+        "major": 4476,
+        "minor": 5,
+        "requestType": {
+            "enabled": "bool"
+        },
+        "description": "Enable or disable the legacy frost sensor."
+    },
     "GetFrostSensorEnabled": {
         "major": 4692,
         "minor": 6,

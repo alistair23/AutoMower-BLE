@@ -172,6 +172,14 @@ class TestRequestMethods(unittest.TestCase):
             b"02fd10005314a513016900af3212020000004103",
         )
 
+    def test_generate_request_set_frost_sensor_enabled_legacy(self):
+        command = Command(0x13A51453, parameter=self.protocol["SetFrostSensorEnabledLegacy"])
+
+        self.assertEqual(
+            binascii.hexlify(command.generate_request(enabled=True)),
+            b"02fd11005314a513015400af7c1105000100015d03",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
