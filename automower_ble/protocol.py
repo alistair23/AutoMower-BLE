@@ -189,6 +189,11 @@ class Command:
         response: dict[str, int | str] = {}
         dpos = 0  # data position
         for name, dtype in self.response_data_type.items():
+            if dpos >= len(data):
+                raise ValueError(
+                    f"Response data too short: expected more data after {dpos} bytes "
+                    f"(total: {len(data)}), missing field: {name}"
+                )
             if dtype == "no_response":
                 return None
             if (dtype == "tUnixTime") or (dtype == "uint32"):
