@@ -110,4 +110,5 @@ MowerModels = {
     (39, 5): ModelInformation("Husqvarna", "Automower 410XE Nera"),
     (40, 1): ModelInformation("Husqvarna", "Automower 450X EPOS"),
     (40, 2): ModelInformation("Husqvarna", "Automower 450XH EPOS"),
+    (47, 5): ModelInformation("Gardena", "SILENO sense 600"),
 }
