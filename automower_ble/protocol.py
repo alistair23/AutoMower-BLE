@@ -7,6 +7,7 @@ import json
 from importlib.resources import files
 from bleak import BleakError
 from bleak.backends.characteristic import BleakGATTCharacteristic
+from bleak.exc import BleakDBusError
 from bleak_retry_connector import establish_connection, BleakClientWithServiceCache
 from typing import TYPE_CHECKING
 
@@ -482,6 +483,21 @@ class BLEClient:
         try:
             await self.client.pair()
             logger.info("paired")
+        except BleakDBusError as err:
+            if err.dbus_error == "org.bluez.Error.AuthenticationFailed":
+                logger.warning(
+                    "Pairing failed with AuthenticationFailed. This mower may "
+                    "require a BLE agent that can confirm a passkey. Register "
+                    "one before connecting, e.g. via `bluetoothctl`: "
+                    "`agent DisplayYesNo`, `default-agent`, then accept the "
+                    "confirmation prompt."
+                )
+            else:
+                logger.info(
+                    "Pairing failed, continuing with protocol handshake: %s", err
+                )
+            if not self.client.is_connected:
+                return ResponseResult.UNKNOWN_ERROR
         except BleakError as err:
             logger.info("Pairing failed, continuing with protocol handshake: %s", err)
             if not self.client.is_connected:
