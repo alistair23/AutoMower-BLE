@@ -83,19 +83,27 @@
         "responseType": "bool",
         "description": "Legacy frost sensor enabled state."
     },
-    "GetFrostSensorEnabled": {
+    "SetFrostSensorEnabledLegacy": {
+        "major": 4476,
+        "minor": 5,
+        "requestType": {
+            "enabled": "bool"
+        },
+        "description": "Enable or disable the legacy frost sensor."
+    },
+    "GetEcoModeEnabled": {
         "major": 4692,
         "minor": 6,
         "responseType": "bool",
-        "description": "Get frost sensor enabled state."
+        "description": "Get eco mode enabled state."
     },
-    "SetFrostSensorEnabled": {
+    "SetEcoModeEnabled": {
         "major": 4692,
         "minor": 5,
         "requestType": {
             "enabled": "bool"
         },
-        "description": "Enable or disable the frost sensor."
+        "description": "Enable or disable eco mode."
     },
     "SetMode": {
         "major": 4586,
@@ -713,19 +721,19 @@
         },
         "description": "Anti-collision Radar enabled and available state."
     },
-    "GetChargingStationLoopSignalGeneration": {
+    "GetFrostSensorEnabled": {
         "major": 5370,
         "minor": 1,
         "responseType": "bool",
-        "description": "Charging station loop signal generation or eco mode state."
+        "description": "Get frost sensor enabled state."
     },
-    "SetChargingStationLoopSignalGeneration": {
+    "SetFrostSensorEnabled": {
         "major": 5370,
         "minor": 2,
         "requestType": {
             "enabled": "bool"
         },
-        "description": "Enable or disable charging station loop signal generation or eco mode."
+        "description": "Enable or disable frost sensor."
     },
     "GenerateLoopSignalLegacy": {
         "major": 5356,
