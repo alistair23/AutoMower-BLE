@@ -113,6 +113,14 @@ class TestRequestMethods(unittest.TestCase):
         )
         self.assertIsNone(response)
 
+    def test_decode_short_response(self):
+        # GetState: response_length is 1 but the payload is cut off
+        command = Command(1197489078, self.protocol["GetState"])
+        with self.assertRaises(ValueError):
+            command.parse_response(
+                bytearray.fromhex("02fd1100b63b604701db01afea110200000100")
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
