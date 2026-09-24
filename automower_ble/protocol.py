@@ -408,7 +408,7 @@ class BLEClient:
 
         while len(data) < length:
             try:
-                data = data + await asyncio.wait_for(self.queue.get(), timeout=5)
+                chunk = await asyncio.wait_for(self.queue.get(), timeout=5)
             except TimeoutError:
                 logger.error(
                     "Unable to get full response from device '%s', currently have %s",
@@ -417,6 +417,10 @@ class BLEClient:
                 )
                 logger.error("Expecting %d bytes, only have %d", length, len(data))
                 return None
+            if chunk is None:
+                # Disconnected while waiting for the rest of the response
+                return None
+            data = data + chunk
 
         logger.debug("Final response: %s", str(binascii.hexlify(data)))
 
