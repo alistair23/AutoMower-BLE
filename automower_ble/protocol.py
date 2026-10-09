@@ -1,5 +1,6 @@
 import binascii
 from .helpers import crc
+from .lock import TaskLock
 from enum import IntEnum
 import asyncio
 import logging
@@ -342,7 +343,7 @@ class BLEClient:
         self.pin = pin
         self.MTU_SIZE = 20
 
-        self.lock = asyncio.Lock()
+        self.lock = TaskLock()
         self.queue: asyncio.Queue[bytearray] = asyncio.Queue()
 
         self.client: BleakClient | None = None
@@ -378,11 +379,15 @@ class BLEClient:
     async def _write_data(self, data):
         logger.debug("Writing: %s", str(binascii.hexlify(data)))
 
+        client, characteristic = self.client, self.write_char
+        if client is None or not client.is_connected or characteristic is None:
+            raise BleakError("Mower disconnected before the BLE write")
+
         chunk_size = self.MTU_SIZE - 3
         for chunk in (
             data[i : i + chunk_size] for i in range(0, len(data), chunk_size)
         ):
-            await self.client.write_gatt_char(self.write_char, chunk, response=False)
+            await client.write_gatt_char(characteristic, chunk, response=False)
 
         logger.debug("Finished writing")
 
@@ -462,9 +467,8 @@ class BLEClient:
 
         except asyncio.exceptions.CancelledError:
             logger.debug("Received CancelledError")
-            if self.is_connected():
-                await self.disconnect()
-            return None
+            await self.disconnect()
+            raise
         except BleakError as err:
             logger.warning("BLE communication failed: %s", err)
             if self.is_connected():
@@ -727,14 +731,19 @@ class BLEClient:
         """
 
         logger.info("disconnecting...")
-        await self.client.disconnect()
-        logger.info("disconnected")
-        self.client = None
+        client, self.client = self.client, None
         self.write_char = None
         self.read_char = None
         self._notify_started = False
 
-        await self.queue.put(None)
+        self.queue.put_nowait(None)
+        if client is not None:
+            try:
+                async with asyncio.timeout(10):
+                    await client.disconnect()
+            except (BleakError, TimeoutError) as err:
+                logger.debug("BLE disconnect cleanup failed: %s", err)
+        logger.info("disconnected")
 
     def generate_request_setup_channel_id(self) -> bytearray:
         """

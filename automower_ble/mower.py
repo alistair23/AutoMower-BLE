@@ -25,7 +25,7 @@ from automower_ble.protocol import (
 from automower_ble.models import MowerModels
 from automower_ble.error_codes import ErrorCodes
 
-from bleak import BleakScanner
+from bleak import BleakError, BleakScanner
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +38,8 @@ SPOT_CUT_DURATION_SECONDS = 30 * SECONDS_PER_MINUTE
 class Mower(BLEClient):
     def __init__(self, channel_id: int, address, pin=None):
         super().__init__(channel_id, address, pin)
+        self._session_ready = False
+        self._connecting_task: asyncio.Task | None = None
         self.keep_alive_event = asyncio.Event()
         self.task: asyncio.Task | None = None
         self._connect_lock = asyncio.Lock()
@@ -48,19 +50,40 @@ class Mower(BLEClient):
 
         Returns a ResponseResult
         """
-        if self.is_connected():
-            self._ensure_keep_alive()
-            return ResponseResult.OK
-
-        async with self._connect_lock:
+        async with self.lock:
             if self.is_connected():
                 self._ensure_keep_alive()
                 return ResponseResult.OK
 
-            status = await super().connect(device)
-            if status == ResponseResult.OK:
-                self._ensure_keep_alive()
-            return status
+            await self.disconnect()
+            self._connecting_task = asyncio.current_task()
+            try:
+                status = await super().connect(device)
+                self._session_ready = (
+                    status is ResponseResult.OK and super().is_connected()
+                )
+                if self._session_ready:
+                    self._ensure_keep_alive()
+                elif status is ResponseResult.OK:
+                    return ResponseResult.UNKNOWN_ERROR
+                return status
+            finally:
+                self._connecting_task = None
+                if not self._session_ready:
+                    await self.disconnect()
+
+    def is_connected(self) -> bool:
+        """Report a usable session, not just an established BLE transport."""
+        return self._session_ready and super().is_connected()
+
+    async def _request_response_locked(self, request_data):
+        """Keep handshake, batch commands and cleanup in one transaction."""
+        async with self.lock:
+            if not self.is_connected() and (
+                self._connecting_task is not asyncio.current_task()
+            ):
+                raise BleakError("Mower connection is not ready; reconnect required")
+            return await super()._request_response_locked(request_data)
 
     def _ensure_keep_alive(self) -> None:
         """Start one keep-alive task for the active mower connection."""
@@ -73,15 +96,15 @@ class Mower(BLEClient):
         Disconnect from the mower, this should be called after every
         `connect()` before the Python script exits
         """
-        self.keep_alive_event.set()
-        try:
-            return await super().disconnect()
-        finally:
+        async with self.lock:
+            self._session_ready = False
+            self.keep_alive_event.set()
             if self.task is not None and self.task is not asyncio.current_task():
                 self.task.cancel()
                 with contextlib.suppress(asyncio.CancelledError):
                     await self.task
                 self.task = None
+            await super().disconnect()
 
     async def _keep_alive(self):
         """
