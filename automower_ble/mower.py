@@ -24,6 +24,7 @@ from automower_ble.protocol import (
 )
 from automower_ble.models import MowerModels
 from automower_ble.error_codes import ErrorCodes
+from automower_ble.timestamps import local_timestamp
 
 from bleak import BleakScanner
 
@@ -41,6 +42,7 @@ class Mower(BLEClient):
         self.keep_alive_event = asyncio.Event()
         self.task: asyncio.Task | None = None
         self._connect_lock = asyncio.Lock()
+        self._schedule_write_uncertain = False
 
     async def connect(self, device) -> ResponseResult:
         """
@@ -227,16 +229,8 @@ class Mower(BLEClient):
     ) -> dt.datetime | None:
         """Query the mower next start time"""
         next_start_time = await self.command("GetNextStartTime")
-        if next_start_time is None or next_start_time == 0:
-            return None
-        # The mower reports this value as seconds since epoch in local time, not
-        # UTC. Decode the timestamp as a UTC wall-clock value, then attach the
-        # desired local timezone so Home Assistant displays the actual schedule.
-        local_time = dt.datetime.fromtimestamp(next_start_time, dt.UTC).replace(
-            tzinfo=None
-        )
-        return local_time.replace(
-            tzinfo=timezone or dt.datetime.now().astimezone().tzinfo
+        return local_timestamp(
+            next_start_time, timezone or dt.datetime.now().astimezone().tzinfo
         )
 
     async def mower_activity(self) -> MowerActivity | None:
@@ -347,12 +341,22 @@ class Mower(BLEClient):
                 (MowerActivity.GOING_OUT, MowerActivity.MOWING),
             )
 
-    async def mower_pause(self):
-        await self.command("Pause")
+    async def mower_pause(self) -> ResponseResult:
+        """Pause and return the checked device result to the caller."""
+        result, _ = await self.command_response("Pause")
+        return result
 
-    async def mower_resume(self):
-        # The response validation is expected to fail
-        await self.command("StartTrigger")
+    async def mower_resume(self) -> ResponseResult:
+        """Resume and return the checked result, without retrying the command."""
+        async with self.lock:
+            return await self._start_trigger_locked(
+                "resume",
+                (
+                    MowerActivity.GOING_OUT,
+                    MowerActivity.MOWING,
+                    MowerActivity.GOING_HOME,
+                ),
+            )
 
     async def mower_spot_cut(self) -> ResponseResult:
         """
@@ -433,13 +437,18 @@ class Mower(BLEClient):
         """Validate a StartTrigger result against the actual mower state."""
         if result is ResponseResult.UNKNOWN_ERROR:
             await asyncio.sleep(2)
-            _, state = await self.command_response_locked(
+            state_result, state = await self.command_response_locked(
                 "GetState", warn_on_error=False
             )
-            _, activity = await self.command_response_locked(
+            activity_result, activity = await self.command_response_locked(
                 "GetActivity", warn_on_error=False
             )
-            if state == MowerState.IN_OPERATION and activity in accepted_activities:
+            if (
+                state_result is ResponseResult.OK
+                and activity_result is ResponseResult.OK
+                and state == MowerState.IN_OPERATION
+                and activity in accepted_activities
+            ):
                 logger.debug(
                     "StartTrigger returned UNKNOWN_ERROR but mower accepted %s",
                     context,
@@ -490,100 +499,173 @@ class Mower(BLEClient):
             task["useOnSunday"],
         )
 
-    async def get_tasks(self) -> list[TaskInformation]:
-        """Get all weekly schedule tasks from the mower."""
-        task_count = await self.command("GetNumberOfTasks")
-        if task_count is None:
-            return []
-        logger.debug("Mower reported %s schedule tasks", task_count)
+    @staticmethod
+    def _schedule_key(task: TaskInformation) -> tuple[int, ...]:
+        """Validate fields before any destructive schedule operation."""
+        start, duration = task.start_time_in_minutes, task.duration_in_minutes
+        if type(start) is not int or not 0 <= start < MINUTES_PER_DAY:
+            raise ValueError("Schedule start must be an integer minute within one day")
+        if type(duration) is not int or not 0 < duration <= MINUTES_PER_DAY:
+            raise ValueError("Schedule duration must be 1–1440 integer minutes")
+        days = (
+            task.on_monday,
+            task.on_tuesday,
+            task.on_wednesday,
+            task.on_thursday,
+            task.on_friday,
+            task.on_saturday,
+            task.on_sunday,
+        )
+        if any(type(day) not in (int, bool) or day not in (0, 1) for day in days):
+            raise ValueError("Invalid schedule weekday flags")
+        return (start, duration, *map(int, days))
 
-        for first_task_id in (0, 1):
-            tasks: list[TaskInformation] = []
-            for task_id in range(first_task_id, first_task_id + task_count):
-                task = await self.get_task(task_id)
-                if task is None:
-                    logger.debug("Unable to read schedule task %s", task_id)
-                    break
-                tasks.append(task)
-            if len(tasks) == task_count:
-                logger.debug(
-                    "Read %s schedule tasks starting at task id %s",
-                    len(tasks),
-                    first_task_id,
+    @staticmethod
+    def _validate_schedule_seconds(start: int, duration: int) -> None:
+        if (
+            type(start) is not int
+            or type(duration) is not int
+            or not 0 <= start < MINUTES_PER_DAY * SECONDS_PER_MINUTE
+            or not 0 < duration <= MINUTES_PER_DAY * SECONDS_PER_MINUTE
+            or start % SECONDS_PER_MINUTE
+            or duration % SECONDS_PER_MINUTE
+        ):
+            raise ValueError("Schedule time cannot be represented in whole minutes")
+
+    async def _get_tasks_locked(self) -> list[TaskInformation]:
+        result, count = await self._calendar_command_locked(
+            "GetNumberOfTasks", warn_on_error=False
+        )
+        if (
+            result is not ResponseResult.OK
+            or type(count) is not int
+            or not 0 <= count <= MAX_SCHEDULE_TASKS
+        ):
+            raise RuntimeError(f"Unable to read schedule count: {result.name}")
+        tasks = []
+        first_id = 0
+        for index in range(count):
+            result, data = await self._calendar_command_locked(
+                "GetTask", warn_on_error=False, taskId=index + first_id
+            )
+            if index == 0 and result is ResponseResult.INVALID_ID:
+                first_id = 1
+                result, data = await self._calendar_command_locked(
+                    "GetTask", warn_on_error=False, taskId=1
                 )
-                return tasks
+            if result is not ResponseResult.OK or not isinstance(data, dict):
+                raise RuntimeError(
+                    f"Unable to read schedule {index + 1}: {result.name}"
+                )
+            try:
+                start, duration = data["start"], data["duration"]
+                self._validate_schedule_seconds(start, duration)
+                task = TaskInformation(
+                    start // SECONDS_PER_MINUTE,
+                    duration // SECONDS_PER_MINUTE,
+                    *(
+                        data[f"useOn{day}"]
+                        for day in (
+                            "Monday",
+                            "Tuesday",
+                            "Wednesday",
+                            "Thursday",
+                            "Friday",
+                            "Saturday",
+                            "Sunday",
+                        )
+                    ),
+                )
+                self._schedule_key(task)
+            except (KeyError, TypeError, ValueError) as err:
+                raise RuntimeError(f"Invalid schedule {index + 1}: {err}") from err
+            tasks.append(task)
+        return tasks
 
-        logger.debug("Unable to read mower schedule tasks")
-        return []
+    async def get_tasks(self) -> list[TaskInformation]:
+        """Read the complete calendar; failures must not look like an empty one."""
+        async with self.lock:
+            return await self._get_tasks_locked()
 
-    async def set_tasks(self, tasks: list[TaskInformation]) -> None:
-        """Replace the weekly schedule tasks on the mower."""
+    async def set_tasks(
+        self,
+        tasks: list[TaskInformation],
+        *,
+        expected: list[TaskInformation] | None = None,
+    ) -> None:
+        """Replace schedules without changing mode or starting the mower.
+
+        An uncertain write blocks subsequent replacements on this instance.
+        Verify the calendar in the app before creating a fresh client to retry.
+        """
+        tasks = list(tasks)
         if len(tasks) > MAX_SCHEDULE_TASKS:
             raise ValueError(
                 f"A maximum of {MAX_SCHEDULE_TASKS} schedule tasks is supported"
             )
-
-        for task in tasks:
-            if (
-                task.start_time_in_minutes < 0
-                or task.start_time_in_minutes >= MINUTES_PER_DAY
-            ):
-                raise ValueError("Schedule start time must be within one day")
-            if (
-                task.duration_in_minutes <= 0
-                or task.duration_in_minutes > MINUTES_PER_DAY
-            ):
-                raise ValueError(
-                    "Schedule duration must be between 1 minute and 24 hours"
+        requested = [self._schedule_key(task) for task in tasks]
+        expected_keys = (
+            None if expected is None else [self._schedule_key(t) for t in expected]
+        )
+        async with self.lock:
+            if self._schedule_write_uncertain:
+                raise RuntimeError(
+                    "Previous schedule write is uncertain; verify in the app before using a fresh client"
                 )
-
-        was_permanently_parked = False
-        if tasks:
-            was_permanently_parked = await self.mower_is_permanently_parked()
-
-        await self._expect_ok("StartTaskTransaction")
-        await self._expect_ok("DeleteAllTask")
-
-        for task in tasks:
-            logger.debug(
-                "Writing schedule task start=%s duration=%s days=%s",
-                task.start_time_in_minutes,
-                task.duration_in_minutes,
-                {
-                    "monday": bool(task.on_monday),
-                    "tuesday": bool(task.on_tuesday),
-                    "wednesday": bool(task.on_wednesday),
-                    "thursday": bool(task.on_thursday),
-                    "friday": bool(task.on_friday),
-                    "saturday": bool(task.on_saturday),
-                    "sunday": bool(task.on_sunday),
-                },
-            )
-            await self._expect_ok(
-                "AddTask",
-                start=int(task.start_time_in_minutes) * SECONDS_PER_MINUTE,
-                duration=int(task.duration_in_minutes) * SECONDS_PER_MINUTE,
-                useOnMonday=bool(task.on_monday),
-                useOnTuesday=bool(task.on_tuesday),
-                useOnWednesday=bool(task.on_wednesday),
-                useOnThursday=bool(task.on_thursday),
-                useOnFriday=bool(task.on_friday),
-                useOnSaturday=bool(task.on_saturday),
-                useOnSunday=bool(task.on_sunday),
-                unknown=0,
-            )
-
-        await self._expect_ok("CommitTaskTransaction")
-        if tasks and was_permanently_parked:
-            result = await self.mower_resume_schedule()
-            if result is not ResponseResult.OK:
-                raise RuntimeError(f"SetMode returned {result.name}")
+            current = [self._schedule_key(t) for t in await self._get_tasks_locked()]
+            if expected_keys is not None and sorted(current) != sorted(expected_keys):
+                raise RuntimeError("Schedules changed while editing; refresh and retry")
+            if sorted(current) == sorted(requested):
+                return
+            self._schedule_write_uncertain = True
+            await self._expect_ok_locked("StartTaskTransaction")
+            await self._expect_ok_locked("DeleteAllTask")
+            for start, duration, *days in requested:
+                await self._expect_ok_locked(
+                    "AddTask",
+                    start=start * SECONDS_PER_MINUTE,
+                    duration=duration * SECONDS_PER_MINUTE,
+                    **{
+                        f"useOn{day}": bool(enabled)
+                        for day, enabled in zip(
+                            (
+                                "Monday",
+                                "Tuesday",
+                                "Wednesday",
+                                "Thursday",
+                                "Friday",
+                                "Saturday",
+                                "Sunday",
+                            ),
+                            days,
+                            strict=True,
+                        )
+                    },
+                    unknown=0,
+                )
+            await self._expect_ok_locked("CommitTaskTransaction")
+            actual = [self._schedule_key(t) for t in await self._get_tasks_locked()]
+            if sorted(actual) != sorted(requested):
+                raise RuntimeError("Schedule read-back did not match requested changes")
+            self._schedule_write_uncertain = False
 
     async def clear_tasks(self) -> None:
-        """Remove all weekly schedule tasks from the mower."""
-        await self._expect_ok("StartTaskTransaction")
-        await self._expect_ok("DeleteAllTask")
-        await self._expect_ok("CommitTaskTransaction")
+        """Clear through the same guarded and verified replacement path."""
+        await self.set_tasks([])
+
+    async def _calendar_command_locked(self, command_name: str, **kwargs):
+        response = await self.command_response_locked(command_name, **kwargs)
+        # The current upstream transport consumes cancellation; do not continue
+        # a calendar transaction if a caller has cancelled this task.
+        task = asyncio.current_task()
+        if task is not None and task.cancelling():
+            raise asyncio.CancelledError
+        return response
+
+    async def _expect_ok_locked(self, command_name: str, **kwargs) -> None:
+        result, _ = await self._calendar_command_locked(command_name, **kwargs)
+        if result is not ResponseResult.OK:
+            raise RuntimeError(f"{command_name} returned {result.name}")
 
     async def _expect_ok(self, command_name: str, **kwargs) -> None:
         """Send a command and raise when the mower rejects it."""
