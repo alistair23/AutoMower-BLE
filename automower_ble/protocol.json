@@ -679,11 +679,20 @@
         "responseType": "uint16",
         "description": "Hardware revision."
     },
-    "GetSupportedAccessories": {
+    "GetCollisionSensorStatus": {
         "major": 4166,
         "minor": 8,
-        "responseType": "uint16",
-        "description": "Supported mower accessory bitmask."
+        "responseType": {
+            "front": "bool",
+            "rear": "bool"
+        },
+        "description": "Front and rear collision sensor status, not accessory availability."
+    },
+    "GetLiftSensorStatus": {
+        "major": 4476,
+        "minor": 6,
+        "responseType": "bool",
+        "description": "Lift sensor status on supported mowers; older models use Comboard data."
     },
     "GenerateLoopSignal": {
         "major": 4692,

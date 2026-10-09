@@ -215,6 +215,34 @@ class Mower(BLEClient):
         """Query the mower battery level"""
         return await self.command("GetBatteryLevel")
 
+    async def mower_statistics(self) -> dict[str, int | None]:
+        """Read six independent lifetime counters without the optional aggregate.
+
+        Time counters are raw seconds; collision and charge counters are counts.
+        Unavailable, rejected or malformed fields are None, never fabricated zero.
+        Reads are not an atomic snapshot. Each call attempts all six counters,
+        including counters whose previous read failed. Exceptions raised by
+        command_response are not caught by this method.
+        """
+        statistics: dict[str, int | None] = {}
+        for field, command in (
+            ("totalRunningTime", "GetTotalRunningTime"),
+            ("totalCuttingTime", "GetTotalCuttingTime"),
+            ("totalChargingTime", "GetTotalChargingTime"),
+            ("totalSearchingTime", "GetTotalSearchingTime"),
+            ("numberOfCollisions", "GetNumberOfCollisions"),
+            ("numberOfChargingCycles", "GetNumberOfChargingCycles"),
+        ):
+            result, value = await self.command_response(command, warn_on_error=False)
+            statistics[field] = (
+                value
+                if result is ResponseResult.OK
+                and type(value) is int
+                and 0 <= value <= 0xFFFFFFFF
+                else None
+            )
+        return statistics
+
     async def mower_state(self) -> MowerState | None:
         """Query the mower state"""
         state = await self.command("GetState")
